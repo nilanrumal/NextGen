@@ -1,0 +1,57 @@
+{
+  "entities": {
+    "Message": {
+      "title": "Message",
+      "description": "A message in a chat session",
+      "type": "object",
+      "properties": {
+        "chatId": { "type": "string" },
+        "senderId": { "type": "string" },
+        "text": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "type": { "type": "string", "enum": ["bot", "user", "agent"] }
+      },
+      "required": ["chatId", "senderId", "text", "timestamp", "type"]
+    },
+    "Chat": {
+      "title": "Chat",
+      "description": "A chat session between a user and the AI/Agent",
+      "type": "object",
+      "properties": {
+        "status": { "type": "string", "enum": ["active_bot", "waiting", "active_agent"] },
+        "userEmail": { "type": "string" },
+        "userName": { "type": "string" },
+        "lastMessage": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["status", "updatedAt"]
+    },
+    "SiteConfig": {
+      "title": "Site Configuration",
+      "description": "Settings for the website content",
+      "type": "object",
+      "properties": {
+        "bannerTitle": { "type": "string" },
+        "bannerSubtitle": { "type": "string" },
+        "hotline": { "type": "string" },
+        "address": { "type": "string" },
+        "email": { "type": "string" },
+        "knowledgeBase": { "type": "string" }
+      }
+    }
+  },
+  "firestore": {
+    "chats": {
+      "schema": "Chat",
+      "description": "Collection of all chat sessions"
+    },
+    "chats/{chatId}/messages": {
+      "schema": "Message",
+      "description": "Messages within a specific chat"
+    },
+    "siteConfig/current": {
+      "schema": "SiteConfig",
+      "description": "Global website settings"
+    }
+  }
+}
