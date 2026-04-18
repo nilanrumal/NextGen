@@ -7,6 +7,7 @@ import { signInAnonymously } from 'firebase/auth';
 import { io, Socket } from 'socket.io-client';
 import { getChatBotResponse } from '../../services/geminiService';
 import { cn } from '../../lib/utils';
+import toast from 'react-hot-toast';
 
 export default function ChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
@@ -84,56 +85,66 @@ export default function ChatWidget() {
     const userText = input;
     setInput('');
 
-    // Add user message to Firestore
-    await addDoc(collection(db, `chats/${chatId}/messages`), {
-      text: userText,
-      type: 'user',
-      senderId: 'user',
-      timestamp: serverTimestamp()
-    });
+    try {
+      console.log("Sending message to Firestore...", { chatId, userText });
+      // Add user message to Firestore
+      await addDoc(collection(db, `chats/${chatId}/messages`), {
+        text: userText,
+        type: 'user',
+        senderId: auth.currentUser?.uid || 'anonymous',
+        timestamp: serverTimestamp()
+      });
 
-    await updateDoc(doc(db, 'chats', chatId), {
-      lastMessage: userText,
-      updatedAt: serverTimestamp()
-    });
+      await updateDoc(doc(db, 'chats', chatId), {
+        lastMessage: userText,
+        updatedAt: serverTimestamp()
+      });
 
-    if (chatStatus === 'active_bot') {
-      setIsTyping(true);
-      // Get AI Response
-      const siteConfigDoc = await getDoc(doc(db, 'siteConfig', 'current'));
-      const siteConfig = siteConfigDoc.exists() ? siteConfigDoc.data() : {};
-      
-      const history = messages.slice(-5).map(m => ({ text: m.text, type: m.type }));
-      history.push({ text: userText, type: 'user' });
-      
-      const aiResponse = await getChatBotResponse(history, siteConfig);
-      setIsTyping(false);
-
-      if (aiResponse.includes('[HANDOVER_REQUESTED]')) {
-        const cleanResponse = aiResponse.replace('[HANDOVER_REQUESTED]', '').trim();
-        await addDoc(collection(db, `chats/${chatId}/messages`), {
-          text: cleanResponse || "Connecting you to a human agent, please wait...",
-          type: 'bot',
-          senderId: 'bot',
-          timestamp: serverTimestamp()
-        });
+      if (chatStatus === 'active_bot') {
+        setIsTyping(true);
+        // Get AI Response
+        console.log("Fetching AI response...");
+        const siteConfigDoc = await getDoc(doc(db, 'siteConfig', 'current'));
+        const siteConfig = siteConfigDoc.exists() ? siteConfigDoc.data() : {};
         
-        // Update chat status to waiting
-        await updateDoc(doc(db, 'chats', chatId), {
-          status: 'waiting',
-          updatedAt: serverTimestamp()
-        });
+        const history = messages.slice(-5).map(m => ({ text: m.text, type: m.type }));
+        history.push({ text: userText, type: 'user' });
         
-        // Notify backend via socket
-        socketRef.current?.emit('handover_request', { chatId, userText });
-      } else {
-        await addDoc(collection(db, `chats/${chatId}/messages`), {
-          text: aiResponse,
-          type: 'bot',
-          senderId: 'bot',
-          timestamp: serverTimestamp()
-        });
+        const aiResponse = await getChatBotResponse(history, siteConfig);
+        console.log("AI Response received:", aiResponse);
+        setIsTyping(false);
+
+        if (aiResponse.includes('[HANDOVER_REQUESTED]')) {
+          const cleanResponse = aiResponse.replace('[HANDOVER_REQUESTED]', '').trim();
+          await addDoc(collection(db, `chats/${chatId}/messages`), {
+            text: cleanResponse || "Connecting you to a human agent, please wait...",
+            type: 'bot',
+            senderId: 'bot',
+            timestamp: serverTimestamp()
+          });
+          
+          // Update chat status to waiting
+          await updateDoc(doc(db, 'chats', chatId), {
+            status: 'waiting',
+            updatedAt: serverTimestamp()
+          });
+          
+          // Notify backend via socket
+          socketRef.current?.emit('handover_request', { chatId, userText });
+        } else {
+          await addDoc(collection(db, `chats/${chatId}/messages`), {
+            text: aiResponse,
+            type: 'bot',
+            senderId: 'bot',
+            timestamp: serverTimestamp()
+          });
+        }
       }
+    } catch (error: any) {
+      console.error("Chat error:", error);
+      toast.error("Failed to send message: " + (error.message || "Unknown error"));
+      // Restore input on failure
+      setInput(userText);
     }
   };
 

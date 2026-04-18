@@ -1,6 +1,9 @@
+import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Briefcase, ShieldCheck, TrendingUp, Users, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { db } from '../lib/firebase';
+import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 
 const services = [
   {
@@ -26,6 +29,20 @@ const services = [
 ];
 
 export default function Home() {
+  const [config, setConfig] = useState<any>({
+    bannerTitle: "Empowering Businesses",
+    bannerSubtitle: "Next Generation Consultancy",
+  });
+
+  useEffect(() => {
+    const unsubscribe = onSnapshot(doc(db, 'siteConfig', 'current'), (snapshot) => {
+      if (snapshot.exists()) {
+        setConfig(snapshot.data());
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
   return (
     <div className="overflow-hidden">
       {/* Hero Section */}
@@ -38,10 +55,12 @@ export default function Home() {
               transition={{ duration: 0.8 }}
             >
               <span className="inline-block px-4 py-1.5 bg-green-100 text-green-700 rounded-full text-xs font-bold uppercase tracking-widest mb-6">
-                Next Generation Consultancy
+                {config.bannerSubtitle}
               </span>
               <h1 className="text-5xl md:text-7xl font-bold text-gray-900 leading-[1.1] mb-8">
-                Empowering <span className="text-brand-primary">Businesses</span> with Expert Financial Care.
+                {config.bannerTitle.split(' ').map((word: string, i: number) => 
+                  word.toLowerCase() === 'businesses' ? <span key={i} className="text-brand-primary">Businesses </span> : word + ' '
+                )}
               </h1>
               <p className="text-xl text-gray-600 leading-relaxed mb-10 max-w-lg">
                 Trusted partner for Accounting, Tax, and Management Consultancy. We bridge the gap between compliance and growth.

@@ -5,6 +5,11 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 export async function getChatBotResponse(messages: { text: string, type: 'user' | 'bot' | 'agent' }[], siteConfig: any) {
   const model = "gemini-3-flash-preview";
   
+  if (!process.env.GEMINI_API_KEY) {
+    console.error("CRITICAL: GEMINI_API_KEY is not defined in the environment.");
+    return "I apologize, our AI assistant is not properly configured. Please contact support or use the hotline.";
+  }
+
   const systemInstruction = `
     You are an AI Assistant for "NextGen Consultants & Doctors Pvt Ltd".
     Company Info:
