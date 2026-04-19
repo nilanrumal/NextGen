@@ -5,7 +5,7 @@ import { LogIn, MessageSquare, Settings, Users, ArrowRight, Shield, Send, Bell, 
 import { io, Socket } from 'socket.io-client';
 import toast from 'react-hot-toast';
 import { cn } from '../../lib/utils';
-import { signInWithPopup, GoogleAuthProvider, signOut } from 'firebase/auth';
+import { signInWithPopup, GoogleAuthProvider, signOut, signInWithEmailAndPassword } from 'firebase/auth';
 import { motion } from 'motion/react';
 
 export default function AdminDashboard() {
@@ -24,6 +24,9 @@ export default function AdminDashboard() {
     knowledgeBase: ""
   });
   const [activeTab, setActiveTab] = useState<'chats' | 'site' | 'visual'>('chats');
+  const [loginMethod, setLoginMethod] = useState<'google' | 'email'>('google');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const notificationSound = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
@@ -146,9 +149,17 @@ export default function AdminDashboard() {
 
   const handleLogin = async () => {
     try {
-      await signInWithPopup(auth, new GoogleAuthProvider());
-    } catch (error) {
-      toast.error("Login failed");
+      if (loginMethod === 'google') {
+        await signInWithPopup(auth, new GoogleAuthProvider());
+      } else {
+        if (!email || !password) {
+          toast.error("Please enter email and password");
+          return;
+        }
+        await signInWithEmailAndPassword(auth, email, password);
+      }
+    } catch (error: any) {
+      toast.error(error.message || "Login failed");
     }
   };
 
@@ -191,19 +202,60 @@ export default function AdminDashboard() {
   if (!isAdmin) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white p-12 rounded-[3rem] shadow-2xl max-w-md w-full text-center professional-shadow">
+        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white p-12 rounded-[3.5rem] shadow-2xl max-w-md w-full text-center professional-shadow border border-white">
           <div className="h-20 w-20 bg-blue-50 rounded-3xl flex items-center justify-center mx-auto mb-8">
             <Shield className="h-10 w-10 text-brand-primary" />
           </div>
           <h1 className="text-3xl font-bold mb-4">Admin Hub</h1>
-          <p className="text-gray-500 mb-10 leading-relaxed">Secure access for NextGen administrators. Please sign in with your authorized Google account.</p>
+          <p className="text-gray-500 mb-10 leading-relaxed text-sm px-4">Access restricted to NextGen administrators. Please identify yourself.</p>
+          
+          <div className="flex bg-gray-100 p-1 rounded-2xl mb-8">
+            <button 
+              onClick={() => setLoginMethod('google')}
+              className={cn("flex-1 py-3 text-xs font-bold rounded-xl transition-all", loginMethod === 'google' ? "bg-white shadow-sm text-gray-900" : "text-gray-400")}
+            >
+              Google Account
+            </button>
+            <button 
+              onClick={() => setLoginMethod('email')}
+              className={cn("flex-1 py-3 text-xs font-bold rounded-xl transition-all", loginMethod === 'email' ? "bg-white shadow-sm text-gray-900" : "text-gray-400")}
+            >
+              Email/Password
+            </button>
+          </div>
+
+          {loginMethod === 'email' && (
+            <div className="space-y-4 mb-8">
+              <input 
+                type="email"
+                placeholder="Admin Email/Username"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full p-4 bg-gray-50 rounded-2xl border-none focus:ring-2 focus:ring-brand-primary outline-none text-sm"
+              />
+              <input 
+                type="password"
+                placeholder="Access Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full p-4 bg-gray-50 rounded-2xl border-none focus:ring-2 focus:ring-brand-primary outline-none text-sm"
+              />
+            </div>
+          )}
+
           <button 
             onClick={handleLogin}
             className="w-full py-5 bg-black text-white rounded-full font-bold flex items-center justify-center space-x-3 hover:bg-gray-800 transition-all shadow-xl shadow-gray-200"
           >
-            <LogIn className="h-5 w-5" />
-            <span>Secure Admin Login</span>
+            {loginMethod === 'google' ? <LogIn className="h-5 w-5" /> : <Shield className="h-5 w-5" />}
+            <span>{loginMethod === 'google' ? "Continue with Google" : "Login to Dashboard"}</span>
           </button>
+          
+          {loginMethod === 'email' && (
+            <p className="mt-6 text-[10px] text-gray-400 uppercase tracking-widest leading-relaxed">
+              Contact system architect if you have lost your credentials.
+            </p>
+          )}
         </motion.div>
       </div>
     );
