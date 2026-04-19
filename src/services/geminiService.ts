@@ -1,12 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 
-// Safe helper to get env vars in browser or node
-const getEnv = (key: string) => {
-  if (typeof process !== 'undefined' && process.env && process.env[key]) return process.env[key];
-  return (import.meta as any).env?.[key];
-};
-
-const apiKey = getEnv('GEMINI_API_KEY');
+// Standard Vite environment variable access
+const apiKey = import.meta.env.VITE_GEMINI_API_KEY || (typeof process !== 'undefined' ? process.env.GEMINI_API_KEY : undefined);
 const ai = apiKey ? new GoogleGenAI({ apiKey }) : null;
 
 export async function getChatBotResponse(messages: { text: string, type: 'user' | 'bot' | 'agent' }[], siteConfig: any) {
