@@ -3,7 +3,9 @@ import { motion } from 'motion/react';
 import { Briefcase, ShieldCheck, TrendingUp, Users, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { db } from '../lib/firebase';
-import { doc, getDoc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot } from 'firebase/firestore';
+import Hero from '../components/Home/Hero';
+import LogoMarquee from '../components/Home/LogoMarquee';
 
 const services = [
   {
@@ -28,16 +30,56 @@ const services = [
   }
 ];
 
+const DEFAULT_BANNERS = [
+  {
+    title: "Empowering Your Business Growth",
+    subtitle: "Strategic Consultancy",
+    image: "https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=2069&auto=format&fit=crop",
+    ctaText: "Explore Services",
+    ctaLink: "/hire"
+  },
+  {
+    title: "Expert Doctors for Financial Health",
+    subtitle: "Accuracy & Compliance",
+    image: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?q=80&w=2011&auto=format&fit=crop",
+    ctaText: "Consult Now",
+    ctaLink: "/contact"
+  },
+  {
+    title: "Global Standards, Local Expertise",
+    subtitle: "Professional Excellence",
+    image: "https://images.unsplash.com/photo-1573161559525-4607c60f438a?q=80&w=2069&auto=format&fit=crop",
+    ctaText: "About Our Team",
+    ctaLink: "/about"
+  }
+];
+
+const DEFAULT_LOGOS = [
+  "https://picsum.photos/seed/client1/200/100?grayscale",
+  "https://picsum.photos/seed/client2/200/100?grayscale",
+  "https://picsum.photos/seed/client3/200/100?grayscale",
+  "https://picsum.photos/seed/client4/200/100?grayscale",
+  "https://picsum.photos/seed/client5/200/100?grayscale",
+  "https://picsum.photos/seed/client6/200/100?grayscale",
+  "https://picsum.photos/seed/client7/200/100?grayscale",
+  "https://picsum.photos/seed/client8/200/100?grayscale",
+];
+
 export default function Home() {
   const [config, setConfig] = useState<any>({
-    bannerTitle: "Empowering Businesses",
-    bannerSubtitle: "Next Generation Consultancy",
+    banners: DEFAULT_BANNERS,
+    clientLogos: DEFAULT_LOGOS,
   });
 
   useEffect(() => {
     const unsubscribe = onSnapshot(doc(db, 'siteConfig', 'current'), (snapshot) => {
       if (snapshot.exists()) {
-        setConfig(snapshot.data());
+        const data = snapshot.data();
+        setConfig((prev: any) => ({
+          ...prev,
+          banners: data.banners || DEFAULT_BANNERS,
+          clientLogos: data.clientLogos || DEFAULT_LOGOS,
+        }));
       }
     });
     return () => unsubscribe();
@@ -45,64 +87,11 @@ export default function Home() {
 
   return (
     <div className="overflow-hidden">
-      {/* Hero Section */}
-      <section className="relative min-h-[90vh] flex items-center pt-20 bg-gradient-to-br from-white via-green-50/20 to-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-            <motion.div 
-              initial={{ opacity: 0, x: -30 }} 
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8 }}
-            >
-              <span className="inline-block px-4 py-1.5 bg-green-100 text-green-700 rounded-full text-xs font-bold uppercase tracking-widest mb-6">
-                {config.bannerSubtitle}
-              </span>
-              <h1 className="text-5xl md:text-7xl font-bold text-gray-900 leading-[1.1] mb-8">
-                {config.bannerTitle.split(' ').map((word: string, i: number) => 
-                  word.toLowerCase() === 'businesses' ? <span key={i} className="text-brand-primary">Businesses </span> : word + ' '
-                )}
-              </h1>
-              <p className="text-xl text-gray-600 leading-relaxed mb-10 max-w-lg">
-                Trusted partner for Accounting, Tax, and Management Consultancy. We bridge the gap between compliance and growth.
-              </p>
-              <div className="flex flex-wrap gap-4">
-                <Link to="/hire" className="px-8 py-4 bg-brand-primary text-white rounded-full font-bold hover:bg-brand-secondary transition-all shadow-xl shadow-green-500/20">
-                  Hire Our Experts
-                </Link>
-                <Link to="/about" className="px-8 py-4 bg-white text-gray-900 border border-gray-200 rounded-full font-bold hover:border-brand-primary transition-all flex items-center group">
-                  Learn More <ChevronRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
-                </Link>
-              </div>
-            </motion.div>
+      {/* Animated Hero Section */}
+      <Hero banners={config.banners} />
 
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.8, rotate: -2 }}
-              animate={{ opacity: 1, scale: 1, rotate: 0 }}
-              transition={{ duration: 1, delay: 0.2 }}
-              className="relative hidden lg:block"
-            >
-              <div className="absolute -inset-4 bg-brand-primary/10 rounded-3xl blur-3xl" />
-              <img 
-                src="https://images.unsplash.com/photo-1554224155-6726b3ff858f?q=80&w=2011&auto=format&fit=crop" 
-                alt="Professional Workspace" 
-                className="relative rounded-3xl shadow-2xl border border-white/50 object-cover aspect-[4/3]"
-                referrerPolicy="no-referrer"
-              />
-              <div className="absolute top-12 -left-8 bg-white p-6 rounded-2xl shadow-xl professional-shadow animate-bounce-slow">
-                <div className="flex items-center space-x-3">
-                  <div className="h-10 w-10 bg-green-100 rounded-full flex items-center justify-center">
-                    <ShieldCheck className="h-6 w-6 text-green-600" />
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-bold">100% Compliant</h4>
-                    <p className="text-[10px] text-gray-500 uppercase tracking-widest">Global Standards</p>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        </div>
-      </section>
+      {/* Partners Marquee */}
+      <LogoMarquee logos={config.clientLogos} />
 
       {/* Services Grid */}
       <section className="py-24 bg-white border-y border-gray-50">

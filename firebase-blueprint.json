@@ -31,8 +31,23 @@
       "description": "Settings for the website content",
       "type": "object",
       "properties": {
-        "bannerTitle": { "type": "string" },
-        "bannerSubtitle": { "type": "string" },
+        "banners": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "title": { "type": "string" },
+              "subtitle": { "type": "string" },
+              "image": { "type": "string" },
+              "ctaText": { "type": "string" },
+              "ctaLink": { "type": "string" }
+            }
+          }
+        },
+        "clientLogos": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
         "hotline": { "type": "string" },
         "address": { "type": "string" },
         "email": { "type": "string" },

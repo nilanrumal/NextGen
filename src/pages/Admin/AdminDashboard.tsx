@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { db, auth } from '../../lib/firebase';
 import { collection, query, orderBy, onSnapshot, doc, updateDoc, addDoc, serverTimestamp, getDoc, setDoc } from 'firebase/firestore';
-import { LogIn, MessageSquare, Settings, Users, ArrowRight, Shield, Send, Bell, Bot } from 'lucide-react';
+import { LogIn, MessageSquare, Settings, Users, ArrowRight, Shield, Send, Bell, Bot, Trash2, Plus, Image as ImageIcon } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
 import toast from 'react-hot-toast';
 import { cn } from '../../lib/utils';
@@ -16,26 +16,23 @@ export default function AdminDashboard() {
   const [messages, setMessages] = useState<any[]>([]);
   const [input, setInput] = useState('');
   const [siteConfig, setSiteConfig] = useState<any>({
-    bannerTitle: "Empowering Businesses",
-    bannerSubtitle: "Next Generation Consultancy",
+    banners: [],
+    clientLogos: [],
     hotline: "+94 77 338 6064",
     address: "No. 185, Ebert Lane, Kaldemulla, Moratuwa.",
     email: "ceo@consultantsdoctors.com",
     knowledgeBase: ""
   });
-  const [activeTab, setActiveTab] = useState<'chats' | 'site'>('chats');
+  const [activeTab, setActiveTab] = useState<'chats' | 'site' | 'visual'>('chats');
   const notificationSound = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
-    // Check if user is admin
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
       if (user) {
-        // In a real app, you'd check a record in Firestore 'admins'
         const adminDoc = await getDoc(doc(db, 'admins', user.uid));
         if (adminDoc.exists()) {
           setIsAdmin(true);
         } else {
-          // Auto-bootstrap first user as admin for demo purposes
           const adminsSnap = await getDoc(doc(db, 'admins', 'bootstrap'));
           if (!adminsSnap.exists()) {
              await setDoc(doc(db, 'admins', user.uid), { email: user.email, role: 'owner' });
@@ -51,7 +48,6 @@ export default function AdminDashboard() {
       }
     });
 
-    // Notification sound initialization
     notificationSound.current = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
 
     return () => unsubscribe();
@@ -86,6 +82,45 @@ export default function AdminDashboard() {
       socketRef.current?.off('notify_handover');
     };
   }, [isAdmin]);
+
+  const addBanner = () => {
+    const newBanner = {
+      title: "New Banner Title",
+      subtitle: "New Subtitle",
+      image: "https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=2069&auto=format&fit=crop",
+      ctaText: "Get Started",
+      ctaLink: "/hire"
+    };
+    setSiteConfig({ ...siteConfig, banners: [...(siteConfig.banners || []), newBanner] });
+  };
+
+  const removeBanner = (index: number) => {
+    const newBanners = [...siteConfig.banners];
+    newBanners.splice(index, 1);
+    setSiteConfig({ ...siteConfig, banners: newBanners });
+  };
+
+  const updateBanner = (index: number, field: string, value: string) => {
+    const newBanners = [...siteConfig.banners];
+    newBanners[index] = { ...newBanners[index], [field]: value };
+    setSiteConfig({ ...siteConfig, banners: newBanners });
+  };
+
+  const addClientLogo = () => {
+    setSiteConfig({ ...siteConfig, clientLogos: [...(siteConfig.clientLogos || []), ""] });
+  };
+
+  const updateClientLogo = (index: number, value: string) => {
+    const newLogos = [...siteConfig.clientLogos];
+    newLogos[index] = value;
+    setSiteConfig({ ...siteConfig, clientLogos: newLogos });
+  };
+
+  const removeClientLogo = (index: number) => {
+    const newLogos = [...siteConfig.clientLogos];
+    newLogos.splice(index, 1);
+    setSiteConfig({ ...siteConfig, clientLogos: newLogos });
+  };
 
   useEffect(() => {
     if (selectedChatId) {
@@ -185,6 +220,13 @@ export default function AdminDashboard() {
           >
             <Settings className="h-5 w-5" />
             <span>Site Management</span>
+          </button>
+          <button 
+            onClick={() => setActiveTab('visual')}
+            className={cn("w-full flex items-center space-x-4 p-4 rounded-2xl transition-all font-semibold", activeTab === 'visual' ? "bg-brand-primary text-white shadow-lg shadow-blue-500/20" : "text-gray-500 hover:bg-gray-50")}
+          >
+            <ImageIcon className="h-5 w-5" />
+            <span>Visual Appearance</span>
           </button>
         </div>
 
@@ -303,7 +345,7 @@ export default function AdminDashboard() {
               )}
             </div>
           </div>
-        ) : (
+        ) : activeTab === 'site' ? (
           /* Site Management Tab */
           <div className="flex-grow p-12 overflow-y-auto">
             <div className="max-w-4xl mx-auto">
@@ -353,6 +395,140 @@ export default function AdminDashboard() {
                     placeholder="E.g. We specialize in SME auditing. Our team is led by CEO Dr. Silva..."
                     className="flex-grow w-full p-5 bg-gray-50 rounded-3xl border-none focus:ring-2 focus:ring-brand-primary outline-none resize-none"
                   ></textarea>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          /* Visual Appearance Tab */
+          <div className="flex-grow p-12 overflow-y-auto">
+            <div className="max-w-5xl mx-auto">
+              <div className="flex items-center justify-between mb-12">
+                <h2 className="text-3xl font-bold">Visual Appearance</h2>
+                <button onClick={saveConfig} className="bg-brand-primary text-white px-8 py-3 rounded-full font-bold hover:bg-brand-secondary shadow-lg shadow-blue-500/20 transition-all">
+                  Save All Changes
+                </button>
+              </div>
+
+              {/* Banners Section */}
+              <div className="space-y-8 mb-16">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-2xl font-bold">Hero Banners (3 Recommended)</h3>
+                  <button 
+                    onClick={addBanner}
+                    className="flex items-center space-x-2 text-brand-primary font-bold hover:underline"
+                  >
+                    <Plus className="h-5 w-5" />
+                    <span>Add Banner</span>
+                  </button>
+                </div>
+                
+                <div className="grid grid-cols-1 gap-8">
+                  {siteConfig.banners?.map((banner: any, idx: number) => (
+                    <motion.div 
+                      key={idx}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-xl relative overflow-hidden group"
+                    >
+                      <button 
+                        onClick={() => removeBanner(idx)}
+                        className="absolute top-6 right-6 p-2 bg-red-50 text-red-500 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <Trash2 className="h-5 w-5" />
+                      </button>
+
+                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        <div className="lg:col-span-1">
+                          <div className="aspect-video rounded-2xl overflow-hidden bg-gray-100 border border-gray-200 mb-4">
+                            <img src={banner.image} alt="Preview" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                          </div>
+                          <div className="space-y-2">
+                             <label className="text-xs font-bold uppercase tracking-widest text-gray-400 px-1">Image URL</label>
+                             <input 
+                               value={banner.image}
+                               onChange={(e) => updateBanner(idx, 'image', e.target.value)}
+                               className="w-full p-3 bg-gray-50 rounded-xl text-sm border-none focus:ring-2 focus:ring-brand-primary outline-none"
+                             />
+                          </div>
+                        </div>
+                        <div className="lg:col-span-2 space-y-4">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <label className="text-xs font-bold uppercase tracking-widest text-gray-400 px-1">Title</label>
+                              <input 
+                                value={banner.title}
+                                onChange={(e) => updateBanner(idx, 'title', e.target.value)}
+                                className="w-full p-3 bg-gray-50 rounded-xl text-sm border-none focus:ring-2 focus:ring-brand-primary outline-none"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <label className="text-xs font-bold uppercase tracking-widest text-gray-400 px-1">Subtitle</label>
+                              <input 
+                                value={banner.subtitle}
+                                onChange={(e) => updateBanner(idx, 'subtitle', e.target.value)}
+                                className="w-full p-3 bg-gray-50 rounded-xl text-sm border-none focus:ring-2 focus:ring-brand-primary outline-none"
+                              />
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <label className="text-xs font-bold uppercase tracking-widest text-gray-400 px-1">CTA Text</label>
+                              <input 
+                                value={banner.ctaText}
+                                onChange={(e) => updateBanner(idx, 'ctaText', e.target.value)}
+                                className="w-full p-3 bg-gray-50 rounded-xl text-sm border-none focus:ring-2 focus:ring-brand-primary outline-none"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <label className="text-xs font-bold uppercase tracking-widest text-gray-400 px-1">CTA Link</label>
+                              <input 
+                                value={banner.ctaLink}
+                                onChange={(e) => updateBanner(idx, 'ctaLink', e.target.value)}
+                                className="w-full p-3 bg-gray-50 rounded-xl text-sm border-none focus:ring-2 focus:ring-brand-primary outline-none"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Logos Section */}
+              <div className="space-y-8">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-2xl font-bold">Client Logos (Marquee)</h3>
+                  <button 
+                    onClick={addClientLogo}
+                    className="flex items-center space-x-2 text-brand-primary font-bold hover:underline"
+                  >
+                    <Plus className="h-5 w-5" />
+                    <span>Add Logo</span>
+                  </button>
+                </div>
+                
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
+                  {siteConfig.clientLogos?.map((logo: string, idx: number) => (
+                    <div key={idx} className="bg-white p-4 rounded-2xl border border-gray-100 shadow-lg relative group">
+                      <button 
+                        onClick={() => removeClientLogo(idx)}
+                        className="absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                      <div className="aspect-video rounded-lg overflow-hidden bg-gray-50 mb-3 flex items-center justify-center p-2">
+                        <img src={logo} alt="Client" className="max-h-full object-contain" referrerPolicy="no-referrer" />
+                      </div>
+                      <input 
+                        value={logo}
+                        placeholder="Image URL..."
+                        onChange={(e) => updateClientLogo(idx, e.target.value)}
+                        className="w-full text-[10px] p-2 bg-gray-50 rounded border-none focus:ring-1 focus:ring-brand-primary outline-none"
+                      />
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
