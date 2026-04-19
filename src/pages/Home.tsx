@@ -55,14 +55,14 @@ const DEFAULT_BANNERS = [
 ];
 
 const DEFAULT_LOGOS = [
-  "https://ariyafood.com/wp-content/uploads/2019/12/logo-new.png",
+  "https://ariyafood.lk/wp-content/uploads/2021/05/Logo-01-1.png",
   "https://connectprint.lk/wp-content/uploads/2021/03/logo-2.png",
   "https://swisslankacommodities.lk/wp-content/uploads/2019/08/logo.png",
   "https://api.dicebear.com/7.x/initials/svg?seed=PFL&backgroundColor=009639",
   "https://api.dicebear.com/7.x/initials/svg?seed=Powerline&backgroundColor=00aeef",
+  "https://api.dicebear.com/7.x/initials/svg?seed=RoyalFoods&backgroundColor=f44336",
   "https://api.dicebear.com/7.x/initials/svg?seed=DH&backgroundColor=333",
   "https://api.dicebear.com/7.x/initials/svg?seed=Beston&backgroundColor=ffc107",
-  "https://api.dicebear.com/7.x/initials/svg?seed=RoyalFoods&backgroundColor=f44336",
 ];
 
 export default function Home() {

@@ -88,7 +88,27 @@ export default function AdminDashboard() {
 
     const configDoc = doc(db, 'siteConfig', 'current');
     const unsubscribeConfig = onSnapshot(configDoc, (snapshot) => {
-      if (snapshot.exists()) setSiteConfig(snapshot.data());
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        // If clientLogos is empty or default, merge with the new high-res attachments
+        if (!data.clientLogos || data.clientLogos.length < 5) {
+          setSiteConfig({
+            ...data,
+            clientLogos: [
+              "https://ariyafood.lk/wp-content/uploads/2021/05/Logo-01-1.png",
+              "https://connectprint.lk/wp-content/uploads/2021/03/logo-2.png",
+              "https://swisslankacommodities.lk/wp-content/uploads/2019/08/logo.png",
+              "https://api.dicebear.com/7.x/initials/svg?seed=PFL&backgroundColor=009639",
+              "https://api.dicebear.com/7.x/initials/svg?seed=Powerline&backgroundColor=00aeef",
+              "https://api.dicebear.com/7.x/initials/svg?seed=RoyalFoods&backgroundColor=f44336",
+              "https://api.dicebear.com/7.x/initials/svg?seed=DH&backgroundColor=333",
+              "https://api.dicebear.com/7.x/initials/svg?seed=Beston&backgroundColor=ffc107",
+            ]
+          });
+        } else {
+          setSiteConfig(data);
+        }
+      }
     });
 
     return () => {

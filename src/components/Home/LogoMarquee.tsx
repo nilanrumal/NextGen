@@ -30,13 +30,13 @@ export default function LogoMarquee({ logos }: LogoMarqueeProps) {
         {items.map((logo, index) => (
           <div 
             key={index} 
-            className="logo-card flex items-center justify-center p-6 bg-white shadow-md hover:shadow-2xl transition-all duration-500"
-            style={{ minWidth: '240px', height: '120px' }}
+            className="logo-card flex items-center justify-center p-6 bg-white shadow-md hover:shadow-2xl transition-all duration-500 overflow-hidden"
+            style={{ width: '250px', height: '120px' }}
           >
             <img
               src={logo}
               alt={`Partner ${index}`}
-              className="max-h-full max-w-full object-contain filter drop-shadow-sm hover:scale-110 transition-transform duration-300"
+              className="max-h-full max-w-full object-contain filter drop-shadow-sm hover:scale-110 transition-transform duration-300 pointer-events-none select-none"
               referrerPolicy="no-referrer"
               onError={(e) => {
                 (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/initials/svg?seed=Brand${index}&backgroundColor=ddd`;
