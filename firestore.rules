@@ -25,10 +25,14 @@ service cloud.firestore {
       return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
     }
 
-    // Admins - Allow first user to become admin
+    // Admins - Allow first user or owner to become admin
     match /admins/{uid} {
       allow read: if isSignedIn();
-      allow create: if isSignedIn() && (!exists(/databases/$(database)/documents/admins/bootstrap) || isAdmin());
+      allow create: if isSignedIn() && (
+        request.auth.token.email == 'nilanrumal@gmail.com' ||
+        !exists(/databases/$(database)/documents/admins/bootstrap) || 
+        isAdmin()
+      );
       allow update, delete: if isAdmin();
     }
     

@@ -159,7 +159,16 @@ export default function AdminDashboard() {
         await signInWithEmailAndPassword(auth, email, password);
       }
     } catch (error: any) {
-      toast.error(error.message || "Login failed");
+      console.error("Login Error:", error);
+      if (error.code === 'auth/operation-not-allowed') {
+        toast.error("Email/Password login is not enabled in Firebase Console yet.");
+      } else if (error.code === 'auth/user-not-found') {
+        toast.error("This admin user does not exist. Please create it in Firebase Console.");
+      } else if (error.code === 'auth/wrong-password') {
+        toast.error("Incorrect password.");
+      } else {
+        toast.error(error.message || "Login failed");
+      }
     }
   };
 
