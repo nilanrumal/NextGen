@@ -1,15 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { db, auth } from '../../lib/firebase';
 import { collection, query, orderBy, onSnapshot, doc, updateDoc, addDoc, serverTimestamp, getDoc, setDoc } from 'firebase/firestore';
-import { LogIn, MessageSquare, Settings, Users, ArrowRight, Shield, Send, Bell, Bot, Trash2, Plus, Image as ImageIcon } from 'lucide-react';
+import { MessageSquare, Settings, Users, Shield, Send, Bell, Bot, Trash2, Plus, Image as ImageIcon, AlertCircle, Loader2 } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
 import toast from 'react-hot-toast';
 import { cn } from '../../lib/utils';
-import { signInWithPopup, GoogleAuthProvider, signOut, signInWithEmailAndPassword } from 'firebase/auth';
+import { signOut } from 'firebase/auth';
 import { motion } from 'motion/react';
+import { useNavigate } from 'react-router-dom';
 
 export default function AdminDashboard() {
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+  const [isChecking, setIsChecking] = useState(true);
+  const navigate = useNavigate();
   const socketRef = useRef<Socket | null>(null);
   const [chats, setChats] = useState<any[]>([]);
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
@@ -19,18 +22,16 @@ export default function AdminDashboard() {
     banners: [],
     clientLogos: [],
     hotline: "+94 77 338 6064",
-    address: "No. 185, Ebert Lane, Kaldemulla, Moratuwa.",
+    address: "H.O: No. 185, Ebert Lane, Kaldemulla, Moratuwa, Sri Lanka. | B.O: No. 147/4/1, Maharagama Road, Mampe, Piliyandala.",
     email: "ceo@consultantsdoctors.com",
-    knowledgeBase: ""
+    knowledgeBase: "NextGen Consultants & Doctors (Pvt) Ltd. Founded by Dr. Kamal Peiris. Specializing in Strategic consulting, Financial & Accounting, and Corporate Compliance. Head Office: Moratuwa. Branch: Piliyandala."
   });
   const [activeTab, setActiveTab] = useState<'chats' | 'site' | 'visual'>('chats');
-  const [loginMethod, setLoginMethod] = useState<'google' | 'email'>('google');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const notificationSound = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
+      setIsChecking(true);
       if (user) {
         // Explicit owner bypass for the user's accounts
         const authorizedEmails = ['nilanrumal@gmail.com', 'rumalfernando@gmail.com'];
@@ -42,6 +43,7 @@ export default function AdminDashboard() {
              await setDoc(doc(db, 'admins', 'bootstrap'), { done: true });
           }
           setIsAdmin(true);
+          setIsChecking(false);
           return;
         }
 
@@ -55,13 +57,14 @@ export default function AdminDashboard() {
              await setDoc(doc(db, 'admins', 'bootstrap'), { done: true });
              setIsAdmin(true);
           } else {
-             toast.error("Access denied. Not an admin.");
-             signOut(auth);
+             setIsAdmin(false);
           }
         }
       } else {
         setIsAdmin(false);
+        navigate('/admin/login');
       }
+      setIsChecking(false);
     });
 
     notificationSound.current = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
@@ -72,8 +75,9 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (!isAdmin) return;
 
+    // Fixed fetch error by forcing websocket transport
     if (!socketRef.current) {
-      socketRef.current = io();
+      socketRef.current = io({ transports: ['websocket'] });
     }
 
     socketRef.current.emit('join_admin');
@@ -168,40 +172,21 @@ export default function AdminDashboard() {
     }
   }, [selectedChatId]);
 
-  const handleLogin = async () => {
-    try {
-      if (loginMethod === 'google') {
-        await signInWithPopup(auth, new GoogleAuthProvider());
-      } else {
-        if (!email || !password) {
-          toast.error("Please enter email and password");
-          return;
-        }
-        await signInWithEmailAndPassword(auth, email, password);
-      }
-    } catch (error: any) {
-      console.error("Login Error:", error);
-      if (error.code === 'auth/operation-not-allowed') {
-        toast.error("Email/Password login is not enabled in Firebase Console yet.");
-      } else if (error.code === 'auth/user-not-found') {
-        toast.error("This admin user does not exist. Please create it in Firebase Console.");
-      } else if (error.code === 'auth/wrong-password') {
-        toast.error("Incorrect password.");
-      } else {
-        toast.error(error.message || "Login failed");
-      }
-    }
-  };
-
   const joinChat = async (id: string) => {
     setSelectedChatId(id);
     const chat = chats.find(c => c.id === id);
-    if (chat && chat.status !== 'active_agent') {
-      await updateDoc(doc(db, 'chats', id), {
-        status: 'active_agent',
+    if (chat) {
+      const updates: any = {
+        isReadByAdmin: true,
         updatedAt: serverTimestamp()
-      });
-      socketRef.current?.emit('agent_join', { chatId: id });
+      };
+      
+      if (chat.status !== 'active_agent') {
+        updates.status = 'active_agent';
+        socketRef.current?.emit('agent_join', { chatId: id });
+      }
+
+      await updateDoc(doc(db, 'chats', id), updates);
     }
   };
 
@@ -229,64 +214,40 @@ export default function AdminDashboard() {
     toast.success("Site configuration updated!");
   };
 
-  if (!isAdmin) {
+  if (isChecking) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white p-12 rounded-[3.5rem] shadow-2xl max-w-md w-full text-center professional-shadow border border-white">
-          <div className="h-20 w-20 bg-blue-50 rounded-3xl flex items-center justify-center mx-auto mb-8">
-            <Shield className="h-10 w-10 text-brand-primary" />
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <Loader2 className="animate-spin h-8 w-8 text-brand-primary" />
+      </div>
+    );
+  }
+
+  if (isAdmin === false) {
+    return (
+      <div className="min-h-screen bg-[#fcfcfc] flex items-center justify-center p-6 text-center">
+        <div className="max-w-md w-full bg-white p-12 rounded-[3.5rem] shadow-2xl shadow-gray-200 border border-gray-50">
+          <div className="h-20 w-20 bg-red-50 rounded-3xl flex items-center justify-center mx-auto mb-8">
+            <AlertCircle className="h-10 w-10 text-red-500" />
           </div>
-          <h1 className="text-3xl font-bold mb-4">Admin Hub</h1>
-          <p className="text-gray-500 mb-10 leading-relaxed text-sm px-4">Access restricted to NextGen administrators. Please identify yourself.</p>
-          
-          <div className="flex bg-gray-100 p-1 rounded-2xl mb-8">
+          <h1 className="text-3xl font-serif mb-4 tracking-tight text-gray-900 px-4">Permission <span className="italic text-gray-400">Denied</span></h1>
+          <p className="text-gray-500 mb-10 leading-relaxed text-sm px-6">
+            Your account is authenticated, but you do not have administrative privileges for the NextGen Executive Portal.
+          </p>
+          <div className="space-y-4">
             <button 
-              onClick={() => setLoginMethod('google')}
-              className={cn("flex-1 py-3 text-xs font-bold rounded-xl transition-all", loginMethod === 'google' ? "bg-white shadow-sm text-gray-900" : "text-gray-400")}
+              onClick={() => signOut(auth).then(() => navigate('/admin/login'))}
+              className="w-full py-5 bg-gray-900 text-white rounded-full font-bold flex items-center justify-center space-x-3 hover:bg-brand-primary transition-all shadow-xl shadow-gray-200"
             >
-              Google Account
+              Sign Out & Retry
             </button>
             <button 
-              onClick={() => setLoginMethod('email')}
-              className={cn("flex-1 py-3 text-xs font-bold rounded-xl transition-all", loginMethod === 'email' ? "bg-white shadow-sm text-gray-900" : "text-gray-400")}
+              onClick={() => navigate('/')}
+              className="w-full py-4 bg-gray-50 text-gray-500 rounded-full font-bold text-xs uppercase tracking-widest hover:bg-gray-100 transition-all"
             >
-              Email/Password
+              Back to Public Site
             </button>
           </div>
-
-          {loginMethod === 'email' && (
-            <div className="space-y-4 mb-8">
-              <input 
-                type="email"
-                placeholder="Admin Email/Username"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full p-4 bg-gray-50 rounded-2xl border-none focus:ring-2 focus:ring-brand-primary outline-none text-sm"
-              />
-              <input 
-                type="password"
-                placeholder="Access Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full p-4 bg-gray-50 rounded-2xl border-none focus:ring-2 focus:ring-brand-primary outline-none text-sm"
-              />
-            </div>
-          )}
-
-          <button 
-            onClick={handleLogin}
-            className="w-full py-5 bg-black text-white rounded-full font-bold flex items-center justify-center space-x-3 hover:bg-gray-800 transition-all shadow-xl shadow-gray-200"
-          >
-            {loginMethod === 'google' ? <LogIn className="h-5 w-5" /> : <Shield className="h-5 w-5" />}
-            <span>{loginMethod === 'google' ? "Continue with Google" : "Login to Dashboard"}</span>
-          </button>
-          
-          {loginMethod === 'email' && (
-            <p className="mt-6 text-[10px] text-gray-400 uppercase tracking-widest leading-relaxed">
-              Contact system architect if you have lost your credentials.
-            </p>
-          )}
-        </motion.div>
+        </div>
       </div>
     );
   }
@@ -302,9 +263,9 @@ export default function AdminDashboard() {
           >
             <MessageSquare className="h-5 w-5" />
             <span>Chat Monitoring</span>
-            {chats.filter(c => c.status === 'waiting').length > 0 && (
+            {chats.filter(c => !c.isReadByAdmin || c.status === 'waiting').length > 0 && (
               <span className="ml-auto bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full animate-pulse">
-                {chats.filter(c => c.status === 'waiting').length} NEW
+                {chats.filter(c => !c.isReadByAdmin || c.status === 'waiting').length} NEW
               </span>
             )}
           </button>
@@ -353,29 +314,46 @@ export default function AdminDashboard() {
                     key={chat.id} 
                     onClick={() => joinChat(chat.id)}
                     className={cn(
-                      "w-full p-6 text-left transition-all hover:bg-gray-50 flex items-start space-x-4",
-                      selectedChatId === chat.id && "bg-blue-50 border-r-4 border-brand-primary"
+                      "w-full p-6 text-left transition-all hover:bg-gray-50 flex items-start space-x-4 relative overflow-hidden",
+                      selectedChatId === chat.id ? "bg-blue-50 border-r-4 border-brand-primary" : 
+                      !chat.isReadByAdmin ? "bg-white shadow-[inset_4px_0_0_0_#ef4444]" : "bg-white"
                     )}
                   >
+                    {chat.status === 'waiting' && (
+                      <div className="absolute top-0 left-0 w-1 h-full bg-red-500 animate-pulse" />
+                    )}
                     <div className={cn(
-                      "h-12 w-12 rounded-xl flex items-center justify-center shrink-0",
-                      chat.status === 'waiting' ? "bg-red-100 text-red-600" : "bg-blue-100 text-blue-600"
+                      "h-12 w-12 rounded-xl flex items-center justify-center shrink-0 relative",
+                      chat.status === 'waiting' ? "bg-red-100 text-red-600" : 
+                      !chat.isReadByAdmin ? "bg-blue-100 text-blue-600" : "bg-gray-100 text-gray-400"
                     )}>
-                      {chat.status === 'waiting' ? <Bell className="animate-swing" /> : <Users />}
+                      {chat.status === 'waiting' ? <Bell className="animate-swing h-5 w-5" /> : <Users className="h-5 w-5" />}
+                      {!chat.isReadByAdmin && (
+                        <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 border-2 border-white rounded-full" />
+                      )}
                     </div>
                     <div className="overflow-hidden flex-grow">
                       <div className="flex justify-between items-center mb-1">
-                        <span className="font-bold text-sm">{chat.userName || 'Anonymous Client'}</span>
-                        <span className="text-[10px] text-gray-400">{chat.updatedAt?.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                        <span className={cn("text-sm transition-colors", !chat.isReadByAdmin ? "font-black text-gray-900" : "font-bold text-gray-600")}>
+                          {chat.userName || 'Anonymous Client'}
+                        </span>
+                        <span className="text-[10px] text-gray-400 font-medium">{chat.updatedAt?.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                       </div>
-                      <p className="text-xs text-gray-500 truncate mb-2">{chat.lastMessage || 'Starting conversation...'}</p>
-                      <span className={cn(
-                        "text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full",
-                        chat.status === 'waiting' ? "bg-red-100 text-red-700" : 
-                        chat.status === 'active_agent' ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"
-                      )}>
-                        {chat.status.replace('_', ' ')}
-                      </span>
+                      <p className={cn("text-xs truncate mb-2", !chat.isReadByAdmin ? "text-gray-900 font-medium" : "text-gray-500")}>
+                        {chat.lastMessage || 'Starting conversation...'}
+                      </p>
+                      <div className="flex items-center justify-between">
+                        <span className={cn(
+                          "text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full",
+                          chat.status === 'waiting' ? "bg-red-100 text-red-700" : 
+                          chat.status === 'active_agent' ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"
+                        )}>
+                          {chat.status.replace('_', ' ')}
+                        </span>
+                        {!chat.isReadByAdmin && (
+                          <span className="text-[9px] font-bold text-red-500 uppercase tracking-tighter animate-pulse">New Message</span>
+                        )}
+                      </div>
                     </div>
                   </button>
                 ))}

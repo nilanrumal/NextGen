@@ -8,14 +8,13 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
           {/* Brand */}
           <div className="col-span-1 md:col-span-1">
-            <Link to="/" className="flex items-center space-x-3 text-white mb-6">
+            <Link to="/" className="flex items-center mb-6">
               <img 
-                src="/logo.svg" 
+                src="https://firebasestorage.googleapis.com/v0/b/antigravity-ai.appspot.com/o/attachments%2F1745090223594_input_file_0.png?alt=media" 
                 alt="NextGen Logo" 
-                className="h-10 w-auto invert brightness-0 grayscale opacity-80"
+                className="h-16 w-auto bg-white p-2 rounded-lg"
                 referrerPolicy="no-referrer"
               />
-              <span className="text-xl font-bold tracking-tight">NextGen Consultants & Doctors</span>
             </Link>
             <p className="text-sm leading-relaxed opacity-70">
               Your trusted partner for compliance, accounting, and strategic business growth. Professional excellence at every step.
@@ -24,12 +23,12 @@ export default function Footer() {
 
           {/* Quick Links */}
           <div>
-            <h3 className="text-white font-semibold mb-6">Services</h3>
+            <h3 className="text-white font-semibold mb-6">Expertise</h3>
             <ul className="space-y-4 text-sm">
-              <li><Link to="/hire" className="hover:text-brand-secondary transition-colors">Accounting</Link></li>
-              <li><Link to="/hire" className="hover:text-brand-secondary transition-colors">Tax Consulting</Link></li>
-              <li><Link to="/hire" className="hover:text-brand-secondary transition-colors">Internal Auditing</Link></li>
-              <li><Link to="/hire" className="hover:text-brand-secondary transition-colors">Company Secretarial</Link></li>
+              <li><Link to="/hire" className="hover:text-brand-secondary transition-colors">Strategic Consulting</Link></li>
+              <li><Link to="/hire" className="hover:text-brand-secondary transition-colors">Financial Services</Link></li>
+              <li><Link to="/research" className="hover:text-brand-secondary transition-colors">Research Findings</Link></li>
+              <li><Link to="/training" className="hover:text-brand-secondary transition-colors">Corporate Training</Link></li>
             </ul>
           </div>
 
@@ -39,7 +38,10 @@ export default function Footer() {
             <ul className="space-y-4 text-sm">
               <li className="flex items-start space-x-3">
                 <MapPin className="h-5 w-5 text-brand-secondary shrink-0" />
-                <span>No. 185, Ebert Lane, Kaldemulla, Moratuwa. 10400</span>
+                <div className="space-y-2">
+                  <p>H.O: No. 185, Ebert Lane, Kaldemulla, Moratuwa, Sri Lanka.</p>
+                  <p>B.O: No. 147/4/1, Maharagama Road, Mampe, Piliyandala.</p>
+                </div>
               </li>
               <li className="flex items-center space-x-3">
                 <Phone className="h-5 w-5 text-brand-secondary shrink-0" />
@@ -72,7 +74,7 @@ export default function Footer() {
         <div className="border-t border-gray-800 mt-16 pt-8 flex flex-col md:flex-row justify-between items-center text-xs opacity-50">
           <p>© 2026 NextGen Consultants & Doctors Pvt Ltd. All rights reserved.</p>
           <div className="flex space-x-6 mt-4 md:mt-0">
-            <Link to="/admin" className="hover:underline">Admin Login</Link>
+            <Link to="/admin/login" className="hover:underline">Admin Login</Link>
             <span>Privacy Policy</span>
             <span>Terms of Service</span>
           </div>

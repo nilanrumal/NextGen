@@ -10,14 +10,13 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-20">
           <div className="flex items-center">
-            <Link to="/" className="flex items-center space-x-3">
+            <Link to="/" className="flex items-center">
               <img 
-                src="/logo.svg" 
+                src="https://firebasestorage.googleapis.com/v0/b/antigravity-ai.appspot.com/o/attachments%2F1745090223594_input_file_0.png?alt=media" 
                 alt="NextGen Logo" 
-                className="h-10 w-auto"
+                className="h-16 w-auto"
                 referrerPolicy="no-referrer"
               />
-              <span className="text-xl font-bold tracking-tight text-gray-900">NextGen Consultants & Doctors</span>
             </Link>
           </div>
 
@@ -25,7 +24,9 @@ export default function Navbar() {
           <div className="hidden md:flex items-center space-x-8">
             <Link to="/" className="text-sm font-medium text-gray-600 hover:text-brand-primary transition-colors">Home</Link>
             <Link to="/about" className="text-sm font-medium text-gray-600 hover:text-brand-primary transition-colors">About Us</Link>
-            <Link to="/hire" className="text-sm font-medium text-gray-600 hover:text-brand-primary transition-colors">Hire Us</Link>
+            <Link to="/hire" className="text-sm font-medium text-gray-600 hover:text-brand-primary transition-colors">Services</Link>
+            <Link to="/research" className="text-sm font-medium text-gray-600 hover:text-brand-primary transition-colors">Research</Link>
+            <Link to="/training" className="text-sm font-medium text-gray-600 hover:text-brand-primary transition-colors">Training</Link>
             <Link to="/contact" className="text-sm font-medium text-gray-600 hover:text-brand-primary transition-colors">Contact</Link>
             <Link to="/hire" className="bg-brand-primary text-white px-6 py-2.5 rounded-full text-sm font-semibold hover:bg-brand-secondary transition-all transform hover:scale-105">
               Get Started
@@ -46,7 +47,9 @@ export default function Navbar() {
         <div className="md:hidden bg-white border-t border-gray-50 px-4 pt-2 pb-6 space-y-1 shadow-lg">
           <Link to="/" onClick={() => setIsOpen(false)} className="block px-3 py-4 text-base font-medium text-gray-700 hover:bg-gray-50 rounded-lg">Home</Link>
           <Link to="/about" onClick={() => setIsOpen(false)} className="block px-3 py-4 text-base font-medium text-gray-700 hover:bg-gray-50 rounded-lg">About Us</Link>
-          <Link to="/hire" onClick={() => setIsOpen(false)} className="block px-3 py-4 text-base font-medium text-gray-700 hover:bg-gray-50 rounded-lg">Hire Us</Link>
+          <Link to="/hire" onClick={() => setIsOpen(false)} className="block px-3 py-4 text-base font-medium text-gray-700 hover:bg-gray-50 rounded-lg">Services</Link>
+          <Link to="/research" onClick={() => setIsOpen(false)} className="block px-3 py-4 text-base font-medium text-gray-700 hover:bg-gray-50 rounded-lg">Research</Link>
+          <Link to="/training" onClick={() => setIsOpen(false)} className="block px-3 py-4 text-base font-medium text-gray-700 hover:bg-gray-50 rounded-lg">Training</Link>
           <Link to="/contact" onClick={() => setIsOpen(false)} className="block px-3 py-4 text-base font-medium text-gray-700 hover:bg-gray-50 rounded-lg">Contact</Link>
           <Link to="/hire" onClick={() => setIsOpen(false)} className="block px-3 py-4 text-center bg-brand-primary text-white rounded-lg font-semibold mt-4">Get Started</Link>
         </div>

@@ -38,9 +38,15 @@ export default function Contact() {
                   <div className="h-12 w-12 bg-green-50 rounded-2xl flex items-center justify-center shrink-0">
                     <MapPin className="h-6 w-6 text-brand-primary" />
                   </div>
-                  <div>
-                    <h4 className="font-bold">Our Office</h4>
-                    <p className="text-gray-600">No. 185, Ebert Lane, Kaldemulla, Moratuwa. 10400</p>
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="font-bold">Head Office</h4>
+                      <p className="text-gray-600">No. 185, Ebert Lane, Kaldemulla, Moratuwa, Sri Lanka.</p>
+                    </div>
+                    <div>
+                      <h4 className="font-bold">Branch Office</h4>
+                      <p className="text-gray-600">No. 147/4/1, Maharagama Road, Mampe, Piliyandala.</p>
+                    </div>
                   </div>
                 </div>
 

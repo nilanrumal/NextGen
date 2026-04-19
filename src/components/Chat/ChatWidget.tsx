@@ -22,15 +22,25 @@ export default function ChatWidget() {
   useEffect(() => {
     // Ensure user is authenticated anonymously for chat
     const ensureAuth = async () => {
-      if (!auth.currentUser) {
-        await signInAnonymously(auth);
+      try {
+        if (!auth.currentUser) {
+          await signInAnonymously(auth);
+        }
+      } catch (error: any) {
+        console.error("Anonymous Auth Error:", error);
+        if (error.code === 'auth/admin-restricted-operation') {
+          toast.error(
+            "Chat Connection Failed: Anonymous login is disabled in Firebase. Please enable 'Anonymous' provider in Firebase Console -> Authentication -> Sign-in method.",
+            { duration: 10000, id: 'auth-error' }
+          );
+        }
       }
     };
     ensureAuth();
 
-    // Initialize socket safely
+    // Initialize socket safely with websocket transport to prevent fetch error
     if (!socketRef.current) {
-      socketRef.current = io();
+      socketRef.current = io({ transports: ['websocket'] });
     }
 
     if (chatId) {
@@ -97,7 +107,8 @@ export default function ChatWidget() {
 
       await updateDoc(doc(db, 'chats', chatId), {
         lastMessage: userText,
-        updatedAt: serverTimestamp()
+        updatedAt: serverTimestamp(),
+        isReadByAdmin: false
       });
 
       if (chatStatus === 'active_bot') {
