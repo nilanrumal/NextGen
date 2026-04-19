@@ -12,7 +12,7 @@ export default function Navbar() {
           <div className="flex items-center">
             <Link to="/" className="flex items-center space-x-3">
               <img 
-                src="/logo.png" 
+                src="/logo.svg" 
                 alt="NextGen Logo" 
                 className="h-10 w-auto"
                 referrerPolicy="no-referrer"

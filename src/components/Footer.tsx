@@ -10,7 +10,7 @@ export default function Footer() {
           <div className="col-span-1 md:col-span-1">
             <Link to="/" className="flex items-center space-x-3 text-white mb-6">
               <img 
-                src="/logo.png" 
+                src="/logo.svg" 
                 alt="NextGen Logo" 
                 className="h-10 w-auto invert brightness-0 grayscale opacity-80"
                 referrerPolicy="no-referrer"
