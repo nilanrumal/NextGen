@@ -29,6 +29,18 @@ export default function AdminDashboard() {
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
       if (user) {
+        // Explicit owner bypass for nilanrumal@gmail.com
+        if (user.email === 'nilanrumal@gmail.com') {
+          const adminRef = doc(db, 'admins', user.uid);
+          const adminDoc = await getDoc(adminRef);
+          if (!adminDoc.exists()) {
+             await setDoc(adminRef, { email: user.email, role: 'owner' });
+             await setDoc(doc(db, 'admins', 'bootstrap'), { done: true });
+          }
+          setIsAdmin(true);
+          return;
+        }
+
         const adminDoc = await getDoc(doc(db, 'admins', user.uid));
         if (adminDoc.exists()) {
           setIsAdmin(true);

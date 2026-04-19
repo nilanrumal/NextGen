@@ -13,8 +13,22 @@
   }
 }
 
-.professional-shadow {
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+.logo-card {
+  @apply relative overflow-hidden bg-white/40 backdrop-blur-sm rounded-2xl border border-white/60 shadow-sm transition-all duration-500;
+}
+
+.logo-card::before {
+  content: '';
+  @apply absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-full;
+  transition: transform 0.6s ease-in-out;
+}
+
+.logo-card:hover::before {
+  @apply translate-x-full;
+}
+
+.logo-card:hover {
+  @apply bg-white/80 shadow-xl border-white translate-y-[-4px];
 }
 
 .smooth-banner {
