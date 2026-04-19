@@ -55,14 +55,14 @@ const DEFAULT_BANNERS = [
 ];
 
 const DEFAULT_LOGOS = [
-  "https://ariyafood.lk/wp-content/uploads/2021/05/Logo-01-1.png",
-  "https://connectprint.lk/wp-content/uploads/2021/03/logo-2.png",
-  "https://swisslankacommodities.lk/wp-content/uploads/2019/08/logo.png",
-  "https://api.dicebear.com/7.x/initials/svg?seed=PFL&backgroundColor=009639",
-  "https://api.dicebear.com/7.x/initials/svg?seed=Powerline&backgroundColor=00aeef",
-  "https://api.dicebear.com/7.x/initials/svg?seed=RoyalFoods&backgroundColor=f44336",
-  "https://api.dicebear.com/7.x/initials/svg?seed=DH&backgroundColor=333",
-  "https://api.dicebear.com/7.x/initials/svg?seed=Beston&backgroundColor=ffc107",
+  "https://firebasestorage.googleapis.com/v0/b/antigravity-ai.appspot.com/o/attachments%2F1745074872620_input_file_0.png?alt=media",
+  "https://firebasestorage.googleapis.com/v0/b/antigravity-ai.appspot.com/o/attachments%2F1745074872620_input_file_1.png?alt=media",
+  "https://firebasestorage.googleapis.com/v0/b/antigravity-ai.appspot.com/o/attachments%2F1745074872620_input_file_2.png?alt=media",
+  "https://firebasestorage.googleapis.com/v0/b/antigravity-ai.appspot.com/o/attachments%2F1745074872620_input_file_3.png?alt=media",
+  "https://firebasestorage.googleapis.com/v0/b/antigravity-ai.appspot.com/o/attachments%2F1745074872620_input_file_4.png?alt=media",
+  "https://firebasestorage.googleapis.com/v0/b/antigravity-ai.appspot.com/o/attachments%2F1745074872620_input_file_5.png?alt=media",
+  "https://firebasestorage.googleapis.com/v0/b/antigravity-ai.appspot.com/o/attachments%2F1745074872620_input_file_6.png?alt=media",
+  "https://firebasestorage.googleapis.com/v0/b/antigravity-ai.appspot.com/o/attachments%2F1745074872620_input_file_7.png?alt=media",
 ];
 
 export default function Home() {
