@@ -1,12 +1,19 @@
 import { GoogleGenAI } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+// Safe helper to get env vars in browser or node
+const getEnv = (key: string) => {
+  if (typeof process !== 'undefined' && process.env && process.env[key]) return process.env[key];
+  return (import.meta as any).env?.[key];
+};
+
+const apiKey = getEnv('GEMINI_API_KEY');
+const ai = apiKey ? new GoogleGenAI({ apiKey }) : null;
 
 export async function getChatBotResponse(messages: { text: string, type: 'user' | 'bot' | 'agent' }[], siteConfig: any) {
   const model = "gemini-3-flash-preview";
   
-  if (!process.env.GEMINI_API_KEY) {
-    console.error("CRITICAL: GEMINI_API_KEY is not defined in the environment.");
+  if (!ai) {
+    console.error("CRITICAL: GEMINI_API_KEY is not defined.");
     return "I apologize, our AI assistant is not properly configured. Please contact support or use the hotline.";
   }
 
