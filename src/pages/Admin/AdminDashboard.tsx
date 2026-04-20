@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { db, auth } from '../../lib/firebase';
 import { collection, query, orderBy, onSnapshot, doc, updateDoc, addDoc, serverTimestamp, getDoc, setDoc } from 'firebase/firestore';
-import { MessageSquare, Settings, Users, Shield, Send, Bell, Bot, Trash2, Plus, Image as ImageIcon, AlertCircle, Loader2 } from 'lucide-react';
+import { MessageSquare, Settings, Users, Shield, Send, Bell, Bot, Trash2, Plus, Image as ImageIcon, AlertCircle, Loader2, Target } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
 import toast from 'react-hot-toast';
 import { cn } from '../../lib/utils';
@@ -19,15 +19,20 @@ export default function AdminDashboard() {
   const [messages, setMessages] = useState<any[]>([]);
   const [input, setInput] = useState('');
   const [siteConfig, setSiteConfig] = useState<any>({
-    banners: [],
+    hero: { title: '', subtitle: '', ctaText: '', image: '' },
+    about: { title: '', content: '', image: '' },
+    services: [],
+    contact: { hotline: '', email: '', address: '', whatsapp: '' },
     clientLogos: [],
-    hotline: "+94 77 338 6064",
-    address: "H.O: No. 185, Ebert Lane, Kaldemulla, Moratuwa, Sri Lanka. | B.O: No. 147/4/1, Maharagama Road, Mampe, Piliyandala.",
-    email: "ceo@consultantsdoctors.com",
-    knowledgeBase: "NextGen Consultants & Doctors (Pvt) Ltd. Founded by Dr. Kamal Peiris. Specializing in Strategic consulting, Financial & Accounting, and Corporate Compliance. Head Office: Moratuwa. Branch: Piliyandala."
+    knowledgeBase: ''
   });
-  const [activeTab, setActiveTab] = useState<'chats' | 'site' | 'visual'>('chats');
+  const [activeTab, setActiveTab] = useState<'chats' | 'site' | 'services' | 'visual' | 'knowledge'>('chats');
   const notificationSound = useRef<HTMLAudioElement | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
@@ -95,24 +100,10 @@ export default function AdminDashboard() {
     const unsubscribeConfig = onSnapshot(configDoc, (snapshot) => {
       if (snapshot.exists()) {
         const data = snapshot.data();
-        // If clientLogos is empty or default, merge with the new high-res attachments
-        if (!data.clientLogos || data.clientLogos.length < 5) {
-          setSiteConfig({
-            ...data,
-            clientLogos: [
-              "https://firebasestorage.googleapis.com/v0/b/antigravity-ai.appspot.com/o/attachments%2F1745074872620_input_file_0.png?alt=media",
-              "https://firebasestorage.googleapis.com/v0/b/antigravity-ai.appspot.com/o/attachments%2F1745074872620_input_file_1.png?alt=media",
-              "https://firebasestorage.googleapis.com/v0/b/antigravity-ai.appspot.com/o/attachments%2F1745074872620_input_file_2.png?alt=media",
-              "https://firebasestorage.googleapis.com/v0/b/antigravity-ai.appspot.com/o/attachments%2F1745074872620_input_file_3.png?alt=media",
-              "https://firebasestorage.googleapis.com/v0/b/antigravity-ai.appspot.com/o/attachments%2F1745074872620_input_file_4.png?alt=media",
-              "https://firebasestorage.googleapis.com/v0/b/antigravity-ai.appspot.com/o/attachments%2F1745074872620_input_file_5.png?alt=media",
-              "https://firebasestorage.googleapis.com/v0/b/antigravity-ai.appspot.com/o/attachments%2F1745074872620_input_file_6.png?alt=media",
-              "https://firebasestorage.googleapis.com/v0/b/antigravity-ai.appspot.com/o/attachments%2F1745074872620_input_file_7.png?alt=media",
-            ]
-          });
-        } else {
-          setSiteConfig(data);
-        }
+        setSiteConfig((prev: any) => ({
+          ...prev,
+          ...data
+        }));
       }
     });
 
@@ -122,45 +113,6 @@ export default function AdminDashboard() {
       socketRef.current?.off('notify_handover');
     };
   }, [isAdmin]);
-
-  const addBanner = () => {
-    const newBanner = {
-      title: "New Banner Title",
-      subtitle: "New Subtitle",
-      image: "https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=2069&auto=format&fit=crop",
-      ctaText: "Get Started",
-      ctaLink: "/hire"
-    };
-    setSiteConfig({ ...siteConfig, banners: [...(siteConfig.banners || []), newBanner] });
-  };
-
-  const removeBanner = (index: number) => {
-    const newBanners = [...siteConfig.banners];
-    newBanners.splice(index, 1);
-    setSiteConfig({ ...siteConfig, banners: newBanners });
-  };
-
-  const updateBanner = (index: number, field: string, value: string) => {
-    const newBanners = [...siteConfig.banners];
-    newBanners[index] = { ...newBanners[index], [field]: value };
-    setSiteConfig({ ...siteConfig, banners: newBanners });
-  };
-
-  const addClientLogo = () => {
-    setSiteConfig({ ...siteConfig, clientLogos: [...(siteConfig.clientLogos || []), ""] });
-  };
-
-  const updateClientLogo = (index: number, value: string) => {
-    const newLogos = [...siteConfig.clientLogos];
-    newLogos[index] = value;
-    setSiteConfig({ ...siteConfig, clientLogos: newLogos });
-  };
-
-  const removeClientLogo = (index: number) => {
-    const newLogos = [...siteConfig.clientLogos];
-    newLogos.splice(index, 1);
-    setSiteConfig({ ...siteConfig, clientLogos: newLogos });
-  };
 
   useEffect(() => {
     if (selectedChatId) {
@@ -274,14 +226,28 @@ export default function AdminDashboard() {
             className={cn("w-full flex items-center space-x-4 p-4 rounded-2xl transition-all font-semibold", activeTab === 'site' ? "bg-brand-primary text-white shadow-lg shadow-blue-500/20" : "text-gray-500 hover:bg-gray-50")}
           >
             <Settings className="h-5 w-5" />
-            <span>Site Management</span>
+            <span>Site Content</span>
+          </button>
+          <button 
+            onClick={() => setActiveTab('services')}
+            className={cn("w-full flex items-center space-x-4 p-4 rounded-2xl transition-all font-semibold", activeTab === 'services' ? "bg-brand-primary text-white shadow-lg shadow-blue-500/20" : "text-gray-500 hover:bg-gray-50")}
+          >
+            <Users className="h-5 w-5" />
+            <span>Services</span>
           </button>
           <button 
             onClick={() => setActiveTab('visual')}
             className={cn("w-full flex items-center space-x-4 p-4 rounded-2xl transition-all font-semibold", activeTab === 'visual' ? "bg-brand-primary text-white shadow-lg shadow-blue-500/20" : "text-gray-500 hover:bg-gray-50")}
           >
             <ImageIcon className="h-5 w-5" />
-            <span>Visual Appearance</span>
+            <span>Visual Assets</span>
+          </button>
+          <button 
+            onClick={() => setActiveTab('knowledge')}
+            className={cn("w-full flex items-center space-x-4 p-4 rounded-2xl transition-all font-semibold", activeTab === 'knowledge' ? "bg-brand-primary text-white shadow-lg shadow-blue-500/20" : "text-gray-500 hover:bg-gray-50")}
+          >
+            <Bot className="h-5 w-5" />
+            <span>AI Knowledge</span>
           </button>
         </div>
 
@@ -309,54 +275,60 @@ export default function AdminDashboard() {
                 <h2 className="text-xl font-bold">Active Sessions</h2>
               </div>
               <div className="divide-y divide-gray-50">
-                {chats.map(chat => (
-                  <button 
-                    key={chat.id} 
-                    onClick={() => joinChat(chat.id)}
-                    className={cn(
-                      "w-full p-6 text-left transition-all hover:bg-gray-50 flex items-start space-x-4 relative overflow-hidden",
-                      selectedChatId === chat.id ? "bg-blue-50 border-r-4 border-brand-primary" : 
-                      !chat.isReadByAdmin ? "bg-white shadow-[inset_4px_0_0_0_#ef4444]" : "bg-white"
-                    )}
-                  >
-                    {chat.status === 'waiting' && (
-                      <div className="absolute top-0 left-0 w-1 h-full bg-red-500 animate-pulse" />
-                    )}
-                    <div className={cn(
-                      "h-12 w-12 rounded-xl flex items-center justify-center shrink-0 relative",
-                      chat.status === 'waiting' ? "bg-red-100 text-red-600" : 
-                      !chat.isReadByAdmin ? "bg-blue-100 text-blue-600" : "bg-gray-100 text-gray-400"
-                    )}>
-                      {chat.status === 'waiting' ? <Bell className="animate-swing h-5 w-5" /> : <Users className="h-5 w-5" />}
-                      {!chat.isReadByAdmin && (
-                        <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 border-2 border-white rounded-full" />
+                {chats.length === 0 ? (
+                  <div className="p-12 text-center text-gray-400">
+                    <p className="text-sm font-medium">No active chats found.</p>
+                  </div>
+                ) : (
+                  chats.map(chat => (
+                    <button 
+                      key={chat.id} 
+                      onClick={() => joinChat(chat.id)}
+                      className={cn(
+                        "w-full p-6 text-left transition-all hover:bg-gray-50 flex items-start space-x-4 relative overflow-hidden",
+                        selectedChatId === chat.id ? "bg-blue-50 border-r-4 border-brand-primary" : 
+                        !chat.isReadByAdmin ? "bg-white shadow-[inset_4px_0_0_0_#ef4444]" : "bg-white"
                       )}
-                    </div>
-                    <div className="overflow-hidden flex-grow">
-                      <div className="flex justify-between items-center mb-1">
-                        <span className={cn("text-sm transition-colors", !chat.isReadByAdmin ? "font-black text-gray-900" : "font-bold text-gray-600")}>
-                          {chat.userName || 'Anonymous Client'}
-                        </span>
-                        <span className="text-[10px] text-gray-400 font-medium">{chat.updatedAt?.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                      </div>
-                      <p className={cn("text-xs truncate mb-2", !chat.isReadByAdmin ? "text-gray-900 font-medium" : "text-gray-500")}>
-                        {chat.lastMessage || 'Starting conversation...'}
-                      </p>
-                      <div className="flex items-center justify-between">
-                        <span className={cn(
-                          "text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full",
-                          chat.status === 'waiting' ? "bg-red-100 text-red-700" : 
-                          chat.status === 'active_agent' ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"
-                        )}>
-                          {chat.status.replace('_', ' ')}
-                        </span>
+                    >
+                      {chat.status === 'waiting' && (
+                        <div className="absolute top-0 left-0 w-1 h-full bg-red-500 animate-pulse" />
+                      )}
+                      <div className={cn(
+                        "h-12 w-12 rounded-xl flex items-center justify-center shrink-0 relative",
+                        chat.status === 'waiting' ? "bg-red-100 text-red-600" : 
+                        !chat.isReadByAdmin ? "bg-blue-100 text-blue-600" : "bg-gray-100 text-gray-400"
+                      )}>
+                        {chat.status === 'waiting' ? <Bell className="animate-swing h-5 w-5" /> : <Users className="h-5 w-5" />}
                         {!chat.isReadByAdmin && (
-                          <span className="text-[9px] font-bold text-red-500 uppercase tracking-tighter animate-pulse">New Message</span>
+                          <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 border-2 border-white rounded-full" />
                         )}
                       </div>
-                    </div>
-                  </button>
-                ))}
+                      <div className="overflow-hidden flex-grow">
+                        <div className="flex justify-between items-center mb-1">
+                          <span className={cn("text-sm transition-colors", !chat.isReadByAdmin ? "font-black text-gray-900" : "font-bold text-gray-600")}>
+                            {chat.userName || 'Anonymous Client'}
+                          </span>
+                          <span className="text-[10px] text-gray-400 font-medium">{chat.updatedAt?.toDate ? chat.updatedAt.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '...'}</span>
+                        </div>
+                        <p className={cn("text-xs truncate mb-2", !chat.isReadByAdmin ? "text-gray-900 font-medium" : "text-gray-500")}>
+                          {chat.lastMessage || 'Starting conversation...'}
+                        </p>
+                        <div className="flex items-center justify-between">
+                          <span className={cn(
+                            "text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full",
+                            chat.status === 'waiting' ? "bg-red-100 text-red-700" : 
+                            chat.status === 'active_agent' ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"
+                          )}>
+                            {chat.status.replace('_', ' ')}
+                          </span>
+                          {!chat.isReadByAdmin && (
+                            <span className="text-[9px] font-bold text-red-500 uppercase tracking-tighter animate-pulse">New Message</span>
+                          )}
+                        </div>
+                      </div>
+                    </button>
+                  ))
+                )}
               </div>
             </div>
 
@@ -390,6 +362,7 @@ export default function AdminDashboard() {
                         </div>
                       </div>
                     ))}
+                    <div ref={messagesEndRef} />
                   </div>
                   <form onSubmit={sendMessage} className="p-6 border-t border-gray-100 flex space-x-4">
                     <input 
@@ -418,190 +391,302 @@ export default function AdminDashboard() {
             </div>
           </div>
         ) : activeTab === 'site' ? (
-          /* Site Management Tab */
           <div className="flex-grow p-12 overflow-y-auto">
             <div className="max-w-4xl mx-auto">
               <div className="flex items-center justify-between mb-12">
-                <h2 className="text-3xl font-bold">Site Configuration</h2>
+                <h2 className="text-3xl font-bold">Site Content</h2>
                 <button onClick={saveConfig} className="bg-brand-primary text-white px-8 py-3 rounded-full font-bold hover:bg-brand-secondary shadow-lg shadow-blue-500/20 transition-all">
                   Save Changes
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-8">
+                {/* Hero Content */}
                 <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-xl space-y-6">
                   <h3 className="text-xl font-bold mb-4 flex items-center space-x-2">
-                    <Settings className="h-5 w-5 text-gray-400" />
-                    <span>General Content</span>
+                    <Target className="h-5 w-5 text-brand-primary" />
+                    <span>Hero Section</span>
                   </h3>
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <label className="text-xs font-bold uppercase tracking-widest text-gray-400 px-1">Banner Title</label>
-                      <input 
-                        value={siteConfig.bannerTitle}
-                        onChange={(e) => setSiteConfig({...siteConfig, bannerTitle: e.target.value})}
-                        className="w-full p-4 bg-gray-50 rounded-2xl border-none focus:ring-2 focus:ring-brand-primary outline-none" 
-                      />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold uppercase tracking-widest text-gray-400">Hero Title</label>
+                        <input 
+                          value={siteConfig.hero?.title}
+                          onChange={(e) => setSiteConfig({...siteConfig, hero: {...siteConfig.hero, title: e.target.value}})}
+                          className="w-full p-4 bg-gray-50 rounded-2xl border-none focus:ring-2 focus:ring-brand-primary outline-none" 
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold uppercase tracking-widest text-gray-400">CTA Button Text</label>
+                        <input 
+                          value={siteConfig.hero?.ctaText}
+                          onChange={(e) => setSiteConfig({...siteConfig, hero: {...siteConfig.hero, ctaText: e.target.value}})}
+                          className="w-full p-4 bg-gray-50 rounded-2xl border-none focus:ring-2 focus:ring-brand-primary outline-none" 
+                        />
+                      </div>
                     </div>
                     <div className="space-y-2">
-                      <label className="text-xs font-bold uppercase tracking-widest text-gray-400 px-1">Contact Email</label>
-                      <input 
-                        value={siteConfig.email}
-                        onChange={(e) => setSiteConfig({...siteConfig, email: e.target.value})}
-                        className="w-full p-4 bg-gray-50 rounded-2xl border-none focus:ring-2 focus:ring-brand-primary outline-none" 
+                      <label className="text-xs font-bold uppercase tracking-widest text-gray-400">Hero Subtitle</label>
+                      <textarea 
+                        value={siteConfig.hero?.subtitle}
+                        onChange={(e) => setSiteConfig({...siteConfig, hero: {...siteConfig.hero, subtitle: e.target.value}})}
+                        rows={5}
+                        className="w-full p-4 bg-gray-50 rounded-2xl border-none focus:ring-2 focus:ring-brand-primary outline-none resize-none" 
                       />
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-xl flex flex-col">
-                  <h3 className="text-xl font-bold mb-6 flex items-center space-x-2">
-                    <Bot className="h-5 w-5 text-gray-400" />
-                    <span>AI Training & Knowledge</span>
+                {/* About Section */}
+                <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-xl space-y-6">
+                  <h3 className="text-xl font-bold mb-4 flex items-center space-x-2">
+                    <Users className="h-5 w-5 text-brand-primary" />
+                    <span>About Us Section</span>
                   </h3>
-                  <p className="text-xs text-gray-500 mb-6 leading-relaxed">Provide specific context for the AI chatbot. This will be used as the internal knowledge base for answering client queries.</p>
-                  <textarea 
-                    value={siteConfig.knowledgeBase}
-                    onChange={(e) => setSiteConfig({...siteConfig, knowledgeBase: e.target.value})}
-                    rows={8}
-                    placeholder="E.g. We specialize in SME auditing. Our team is led by CEO Dr. Silva..."
-                    className="flex-grow w-full p-5 bg-gray-50 rounded-3xl border-none focus:ring-2 focus:ring-brand-primary outline-none resize-none"
-                  ></textarea>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold uppercase tracking-widest text-gray-400">Section Title</label>
+                      <input 
+                        value={siteConfig.about?.title}
+                        onChange={(e) => setSiteConfig({...siteConfig, about: {...siteConfig.about, title: e.target.value}})}
+                        className="w-full p-4 bg-gray-50 rounded-2xl border-none focus:ring-2 focus:ring-brand-primary outline-none" 
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold uppercase tracking-widest text-gray-400">Detailed Narrative</label>
+                      <textarea 
+                        value={siteConfig.about?.content}
+                        onChange={(e) => setSiteConfig({...siteConfig, about: {...siteConfig.about, content: e.target.value}})}
+                        rows={6}
+                        className="w-full p-4 bg-gray-50 rounded-2xl border-none focus:ring-2 focus:ring-brand-primary outline-none resize-none" 
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Contact Section */}
+                <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-xl space-y-6">
+                  <h3 className="text-xl font-bold mb-4 flex items-center space-x-2">
+                    <Settings className="h-5 w-5 text-brand-primary" />
+                    <span>Contact & Location</span>
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold uppercase tracking-widest text-gray-400">Hotline</label>
+                      <input 
+                        value={siteConfig.contact?.hotline}
+                        onChange={(e) => setSiteConfig({...siteConfig, contact: {...siteConfig.contact, hotline: e.target.value}})}
+                        className="w-full p-4 bg-gray-50 rounded-2xl border-none focus:ring-2 focus:ring-brand-primary outline-none" 
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold uppercase tracking-widest text-gray-400">Email Address</label>
+                      <input 
+                        value={siteConfig.contact?.email}
+                        onChange={(e) => setSiteConfig({...siteConfig, contact: {...siteConfig.contact, email: e.target.value}})}
+                        className="w-full p-4 bg-gray-50 rounded-2xl border-none focus:ring-2 focus:ring-brand-primary outline-none" 
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold uppercase tracking-widest text-gray-400">WhatsApp</label>
+                      <input 
+                        value={siteConfig.contact?.whatsapp}
+                        onChange={(e) => setSiteConfig({...siteConfig, contact: {...siteConfig.contact, whatsapp: e.target.value}})}
+                        className="w-full p-4 bg-gray-50 rounded-2xl border-none focus:ring-2 focus:ring-brand-primary outline-none" 
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold uppercase tracking-widest text-gray-400">Physical Address</label>
+                      <input 
+                        value={siteConfig.contact?.address}
+                        onChange={(e) => setSiteConfig({...siteConfig, contact: {...siteConfig.contact, address: e.target.value}})}
+                        className="w-full p-4 bg-gray-50 rounded-2xl border-none focus:ring-2 focus:ring-brand-primary outline-none" 
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : activeTab === 'services' ? (
+          <div className="flex-grow p-12 overflow-y-auto">
+            <div className="max-w-4xl mx-auto">
+              <div className="flex items-center justify-between mb-12">
+                <h2 className="text-3xl font-bold">Service Catalog</h2>
+                <div className="flex space-x-4">
+                  <button 
+                    onClick={() => {
+                      const newServices = [...(siteConfig.services || []), { title: 'New Service', description: '', icon: 'Briefcase' }];
+                      setSiteConfig({...siteConfig, services: newServices});
+                    }}
+                    className="flex items-center space-x-2 px-6 py-2 bg-gray-100 text-gray-600 rounded-full font-bold hover:bg-gray-200 transition-all"
+                  >
+                    <Plus className="h-5 w-5" />
+                    <span>Add Service</span>
+                  </button>
+                  <button onClick={saveConfig} className="bg-brand-primary text-white px-8 py-3 rounded-full font-bold hover:bg-brand-secondary shadow-lg transition-all">
+                    Save Services
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {(siteConfig.services || []).map((service: any, index: number) => (
+                  <div key={index} className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-xl relative group">
+                    <button 
+                      onClick={() => {
+                        const filtered = siteConfig.services.filter((_: any, i: number) => i !== index);
+                        setSiteConfig({...siteConfig, services: filtered});
+                      }}
+                      className="absolute top-4 right-4 p-2 bg-red-50 text-red-500 rounded-xl opacity-0 group-hover:opacity-100 transition-all"
+                    >
+                      <Trash2 className="h-5 w-5" />
+                    </button>
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold uppercase tracking-widest text-gray-400">Service Title</label>
+                        <input 
+                          value={service.title}
+                          onChange={(e) => {
+                            const updated = [...siteConfig.services];
+                            updated[index].title = e.target.value;
+                            setSiteConfig({...siteConfig, services: updated});
+                          }}
+                          className="w-full p-4 bg-gray-50 rounded-2xl border-none focus:ring-2 focus:ring-brand-primary outline-none font-bold" 
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold uppercase tracking-widest text-gray-400">Description</label>
+                        <textarea 
+                          value={service.description}
+                          onChange={(e) => {
+                            const updated = [...siteConfig.services];
+                            updated[index].description = e.target.value;
+                            setSiteConfig({...siteConfig, services: updated});
+                          }}
+                          rows={3}
+                          className="w-full p-4 bg-gray-50 rounded-2xl border-none focus:ring-2 focus:ring-brand-primary outline-none resize-none text-sm" 
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        ) : activeTab === 'visual' ? (
+          <div className="flex-grow p-12 overflow-y-auto">
+            <div className="max-w-4xl mx-auto">
+              <div className="flex items-center justify-between mb-12">
+                <h2 className="text-3xl font-bold">Visual Assets</h2>
+                <button onClick={saveConfig} className="bg-brand-primary text-white px-8 py-3 rounded-full font-bold hover:bg-brand-secondary shadow-lg transition-all">
+                  Update Media
+                </button>
+              </div>
+
+              <div className="space-y-8">
+                {/* Major Images */}
+                <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-xl space-y-6">
+                  <h3 className="text-xl font-bold flex items-center space-x-2 text-gray-700">
+                    <ImageIcon className="h-5 w-5 text-brand-primary" />
+                    <span>Primary Website Imagery</span>
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold uppercase tracking-widest text-gray-400">Hero Background URL</label>
+                        <input 
+                          value={siteConfig.hero?.image}
+                          onChange={(e) => setSiteConfig({...siteConfig, hero: {...siteConfig.hero, image: e.target.value}})}
+                          className="w-full p-4 bg-gray-50 rounded-2xl border-none focus:ring-2 focus:ring-brand-primary outline-none" 
+                        />
+                      </div>
+                      <div className="aspect-video rounded-3xl overflow-hidden bg-gray-100 border border-gray-200">
+                        {siteConfig.hero?.image && <img src={siteConfig.hero.image} className="w-full h-full object-cover" alt="Hero Preview" />}
+                      </div>
+                    </div>
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold uppercase tracking-widest text-gray-400">About Section Image URL</label>
+                        <input 
+                          value={siteConfig.about?.image}
+                          onChange={(e) => setSiteConfig({...siteConfig, about: {...siteConfig.about, image: e.target.value}})}
+                          className="w-full p-4 bg-gray-50 rounded-2xl border-none focus:ring-2 focus:ring-brand-primary outline-none" 
+                        />
+                      </div>
+                      <div className="aspect-video rounded-3xl overflow-hidden bg-gray-100 border border-gray-200">
+                        {siteConfig.about?.image && <img src={siteConfig.about.image} className="w-full h-full object-cover" alt="About Preview" />}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Client Logos */}
+                <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-xl space-y-6">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xl font-bold flex items-center space-x-2 text-gray-700">
+                      <Shield className="h-5 w-5 text-brand-primary" />
+                      <span>Client & Partner Logos</span>
+                    </h3>
+                    <button 
+                      onClick={() => setSiteConfig({...siteConfig, clientLogos: [...(siteConfig.clientLogos || []), ""]})}
+                      className="p-3 bg-gray-50 text-gray-500 rounded-2xl hover:bg-brand-primary hover:text-white transition-all shadow-sm"
+                    >
+                      <Plus className="h-5 w-5" />
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {(siteConfig.clientLogos || []).map((logo: string, idx: number) => (
+                      <div key={idx} className="relative group p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                        <button 
+                          onClick={() => setSiteConfig({...siteConfig, clientLogos: siteConfig.clientLogos.filter((_: any, i: number) => i !== idx)})}
+                          className="absolute -top-2 -right-2 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-all shadow-lg"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </button>
+                        <div className="h-16 flex items-center justify-center mb-3">
+                          {logo ? <img src={logo} className="max-h-full object-contain" alt={`Logo ${idx}`} /> : <ImageIcon className="h-8 w-8 text-gray-200" />}
+                        </div>
+                        <input 
+                          value={logo}
+                          onChange={(e) => {
+                            const updated = [...siteConfig.clientLogos];
+                            updated[idx] = e.target.value;
+                            setSiteConfig({...siteConfig, clientLogos: updated});
+                          }}
+                          placeholder="Image URL..."
+                          className="w-full p-2 bg-white rounded-lg text-[10px] border-none focus:ring-1 focus:ring-brand-primary outline-none"
+                        />
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         ) : (
-          /* Visual Appearance Tab */
-          <div className="flex-grow p-12 overflow-y-auto">
-            <div className="max-w-5xl mx-auto">
-              <div className="flex items-center justify-between mb-12">
-                <h2 className="text-3xl font-bold">Visual Appearance</h2>
-                <button onClick={saveConfig} className="bg-brand-primary text-white px-8 py-3 rounded-full font-bold hover:bg-brand-secondary shadow-lg shadow-blue-500/20 transition-all">
-                  Save All Changes
+          <div className="flex h-full p-12 bg-gray-50">
+            <div className="max-w-4xl mx-auto w-full bg-white p-12 rounded-[3.5rem] border border-gray-100 shadow-2xl flex flex-col">
+              <div className="flex items-center justify-between mb-8">
+                <div>
+                  <h2 className="text-3xl font-bold tracking-tight">AI Knowledge Base</h2>
+                  <p className="text-sm text-gray-500 mt-1">Configure internal logic for NextGen Support Intelligence</p>
+                </div>
+                <div className="h-16 w-16 bg-brand-primary text-white rounded-[2rem] flex items-center justify-center shadow-lg shadow-blue-500/20">
+                  <Bot className="h-8 w-8" />
+                </div>
+              </div>
+              <textarea 
+                value={siteConfig.knowledgeBase}
+                onChange={(e) => setSiteConfig({...siteConfig, knowledgeBase: e.target.value})}
+                className="flex-grow w-full p-8 bg-gray-50 rounded-[2rem] border-none focus:ring-2 focus:ring-brand-primary outline-none resize-none text-gray-700 font-medium leading-relaxed shadow-inner"
+                placeholder="Insert core business intelligence, employee lists, and system protocols here. The AI will use this to accurately respond to clients."
+              />
+              <div className="mt-8 flex justify-end">
+                <button onClick={saveConfig} className="bg-gray-900 text-white px-10 py-4 rounded-full font-bold text-lg hover:bg-brand-primary transition-all shadow-xl">
+                  Update AI Knowledge
                 </button>
-              </div>
-
-              {/* Banners Section */}
-              <div className="space-y-8 mb-16">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-2xl font-bold">Hero Banners (3 Recommended)</h3>
-                  <button 
-                    onClick={addBanner}
-                    className="flex items-center space-x-2 text-brand-primary font-bold hover:underline"
-                  >
-                    <Plus className="h-5 w-5" />
-                    <span>Add Banner</span>
-                  </button>
-                </div>
-                
-                <div className="grid grid-cols-1 gap-8">
-                  {siteConfig.banners?.map((banner: any, idx: number) => (
-                    <motion.div 
-                      key={idx}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-xl relative overflow-hidden group"
-                    >
-                      <button 
-                        onClick={() => removeBanner(idx)}
-                        className="absolute top-6 right-6 p-2 bg-red-50 text-red-500 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <Trash2 className="h-5 w-5" />
-                      </button>
-
-                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                        <div className="lg:col-span-1">
-                          <div className="aspect-video rounded-2xl overflow-hidden bg-gray-100 border border-gray-200 mb-4">
-                            <img src={banner.image} alt="Preview" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                          </div>
-                          <div className="space-y-2">
-                             <label className="text-xs font-bold uppercase tracking-widest text-gray-400 px-1">Image URL</label>
-                             <input 
-                               value={banner.image}
-                               onChange={(e) => updateBanner(idx, 'image', e.target.value)}
-                               className="w-full p-3 bg-gray-50 rounded-xl text-sm border-none focus:ring-2 focus:ring-brand-primary outline-none"
-                             />
-                          </div>
-                        </div>
-                        <div className="lg:col-span-2 space-y-4">
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                              <label className="text-xs font-bold uppercase tracking-widest text-gray-400 px-1">Title</label>
-                              <input 
-                                value={banner.title}
-                                onChange={(e) => updateBanner(idx, 'title', e.target.value)}
-                                className="w-full p-3 bg-gray-50 rounded-xl text-sm border-none focus:ring-2 focus:ring-brand-primary outline-none"
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <label className="text-xs font-bold uppercase tracking-widest text-gray-400 px-1">Subtitle</label>
-                              <input 
-                                value={banner.subtitle}
-                                onChange={(e) => updateBanner(idx, 'subtitle', e.target.value)}
-                                className="w-full p-3 bg-gray-50 rounded-xl text-sm border-none focus:ring-2 focus:ring-brand-primary outline-none"
-                              />
-                            </div>
-                          </div>
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                              <label className="text-xs font-bold uppercase tracking-widest text-gray-400 px-1">CTA Text</label>
-                              <input 
-                                value={banner.ctaText}
-                                onChange={(e) => updateBanner(idx, 'ctaText', e.target.value)}
-                                className="w-full p-3 bg-gray-50 rounded-xl text-sm border-none focus:ring-2 focus:ring-brand-primary outline-none"
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <label className="text-xs font-bold uppercase tracking-widest text-gray-400 px-1">CTA Link</label>
-                              <input 
-                                value={banner.ctaLink}
-                                onChange={(e) => updateBanner(idx, 'ctaLink', e.target.value)}
-                                className="w-full p-3 bg-gray-50 rounded-xl text-sm border-none focus:ring-2 focus:ring-brand-primary outline-none"
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Logos Section */}
-              <div className="space-y-8">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-2xl font-bold">Client Logos (Marquee)</h3>
-                  <button 
-                    onClick={addClientLogo}
-                    className="flex items-center space-x-2 text-brand-primary font-bold hover:underline"
-                  >
-                    <Plus className="h-5 w-5" />
-                    <span>Add Logo</span>
-                  </button>
-                </div>
-                
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
-                  {siteConfig.clientLogos?.map((logo: string, idx: number) => (
-                    <div key={idx} className="bg-white p-4 rounded-2xl border border-gray-100 shadow-lg relative group">
-                      <button 
-                        onClick={() => removeClientLogo(idx)}
-                        className="absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </button>
-                      <div className="aspect-video rounded-lg overflow-hidden bg-gray-50 mb-3 flex items-center justify-center p-2">
-                        <img src={logo} alt="Client" className="max-h-full object-contain" referrerPolicy="no-referrer" />
-                      </div>
-                      <input 
-                        value={logo}
-                        placeholder="Image URL..."
-                        onChange={(e) => updateClientLogo(idx, e.target.value)}
-                        className="w-full text-[10px] p-2 bg-gray-50 rounded border-none focus:ring-1 focus:ring-brand-primary outline-none"
-                      />
-                    </div>
-                  ))}
-                </div>
               </div>
             </div>
           </div>

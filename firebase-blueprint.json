@@ -31,26 +31,47 @@
       "description": "Settings for the website content",
       "type": "object",
       "properties": {
-        "banners": {
+        "hero": {
+          "type": "object",
+          "properties": {
+            "title": { "type": "string" },
+            "subtitle": { "type": "string" },
+            "ctaText": { "type": "string" },
+            "image": { "type": "string" }
+          }
+        },
+        "about": {
+          "type": "object",
+          "properties": {
+            "title": { "type": "string" },
+            "content": { "type": "string" },
+            "image": { "type": "string" }
+          }
+        },
+        "services": {
           "type": "array",
           "items": {
             "type": "object",
             "properties": {
               "title": { "type": "string" },
-              "subtitle": { "type": "string" },
-              "image": { "type": "string" },
-              "ctaText": { "type": "string" },
-              "ctaLink": { "type": "string" }
+              "description": { "type": "string" },
+              "icon": { "type": "string" }
             }
+          }
+        },
+        "contact": {
+          "type": "object",
+          "properties": {
+            "hotline": { "type": "string" },
+            "address": { "type": "string" },
+            "email": { "type": "string" },
+            "whatsapp": { "type": "string" }
           }
         },
         "clientLogos": {
           "type": "array",
           "items": { "type": "string" }
         },
-        "hotline": { "type": "string" },
-        "address": { "type": "string" },
-        "email": { "type": "string" },
         "knowledgeBase": { "type": "string" }
       }
     }

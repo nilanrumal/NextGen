@@ -67,7 +67,18 @@ const DEFAULT_LOGOS = [
 
 export default function Home() {
   const [config, setConfig] = useState<any>({
-    banners: DEFAULT_BANNERS,
+    hero: {
+      title: "Empowering Enterprises. Enabling Legacies.",
+      subtitle: "Strategic Consultancy",
+      image: "https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=2069&auto=format&fit=crop",
+      ctaText: "Explore Services",
+      ctaLink: "/hire"
+    },
+    about: {
+      title: "Empowering Enterprises. Enabling Legacies.",
+      content: "We help businesses and organizations enhance performance, solve complex challenges, and achieve sustainable growth. Serving micro businesses, SMEs, and large enterprises, we provide strategic guidance, operational support, and compliance solutions to deliver measurable results, both in Sri Lanka and globally."
+    },
+    services: services,
     clientLogos: DEFAULT_LOGOS,
   });
 
@@ -77,8 +88,11 @@ export default function Home() {
         const data = snapshot.data();
         setConfig((prev: any) => ({
           ...prev,
-          banners: data.banners || DEFAULT_BANNERS,
-          clientLogos: data.clientLogos || DEFAULT_LOGOS,
+          ...data,
+          hero: data.hero || prev.hero,
+          about: data.about || prev.about,
+          services: data.services && data.services.length > 0 ? data.services : prev.services,
+          clientLogos: data.clientLogos || prev.clientLogos,
         }));
       }
     });
@@ -88,7 +102,7 @@ export default function Home() {
   return (
     <div className="overflow-hidden">
       {/* Animated Hero Section */}
-      <Hero banners={config.banners} />
+      <Hero banners={[config.hero]} />
 
       {/* Partners Marquee */}
       <LogoMarquee logos={config.clientLogos} />
@@ -97,15 +111,20 @@ export default function Home() {
       <section className="py-24 bg-white border-y border-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-4xl mx-auto mb-20">
-            <h2 className="text-3xl md:text-5xl font-bold mb-8">Empowering <span className="text-brand-secondary">Enterprises</span>. Enabling Legacies.</h2>
-            <p className="text-gray-600 text-xl leading-relaxed mb-6 font-medium">Turning Insight into Impact, Strategy into Results.</p>
+            <h2 className="text-3xl md:text-5xl font-bold mb-8">
+              {config.about?.title.split('.').map((part: string, i: number) => (
+                <React.Fragment key={i}>
+                  {part}{i === 0 && <span className="text-brand-secondary">.</span>}
+                </React.Fragment>
+              ))}
+            </h2>
             <p className="text-gray-500 text-lg leading-relaxed">
-              We help businesses and organizations enhance performance, solve complex challenges, and achieve sustainable growth. Serving micro businesses, SMEs, and large enterprises, we provide strategic guidance, operational support, and compliance solutions to deliver measurable results, both in Sri Lanka and globally.
+              {config.about?.content}
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {services.map((s, i) => (
+            {config.services.map((s: any, i: number) => (
               <motion.div
                 key={i}
                 initial={{ opacity: 0, y: 20 }}
@@ -115,10 +134,10 @@ export default function Home() {
                 className="p-8 bg-gray-50 rounded-3xl hover:bg-brand-primary hover:text-white transition-all group cursor-pointer"
               >
                 <div className="h-14 w-14 bg-white rounded-2xl flex items-center justify-center mb-6 shadow-sm group-hover:bg-white/10 group-hover:text-white transition-colors">
-                  <s.icon className="h-7 w-7 text-brand-primary group-hover:text-white" />
+                  <Target className="h-7 w-7 text-brand-primary group-hover:text-white" />
                 </div>
                 <h3 className="text-xl font-bold mb-4">{s.title}</h3>
-                <p className="text-sm opacity-70 leading-relaxed mb-6">{s.desc}</p>
+                <p className="text-sm opacity-70 leading-relaxed mb-6">{s.description || s.desc}</p>
                 <Link to="/hire" className="inline-flex items-center text-sm font-bold group-hover:underline">
                   Get Started <ChevronRight className="ml-1 h-4 w-4" />
                 </Link>
