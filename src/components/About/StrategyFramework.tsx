@@ -1,5 +1,5 @@
 import { motion } from 'motion/react';
-import { Lightbulb, Target, BookOpen, Flag, Zap, ClipboardList, Layers, Users, TrendingUp, ShieldCheck, Cpu, Settings, ArrowRight } from 'lucide-react';
+import { Lightbulb, Target, BookOpen, Flag, Zap, ClipboardList, Layers, Users, TrendingUp, ShieldCheck, Cpu, Settings, ArrowRight, Phone } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const steps = [
@@ -61,19 +61,20 @@ export default function StrategyFramework() {
                <p className="text-gray-400 text-lg">Connect with our team to start your organization's transformation journey today.</p>
              </div>
              
-             <div className="flex flex-col sm:flex-row gap-6">
+             <div className="flex flex-col sm:flex-row gap-4 items-center">
                 <a 
                   href="tel:0773386064" 
-                  className="flex items-center space-x-4 px-10 py-5 bg-white text-gray-900 rounded-full font-bold hover:scale-105 transition-transform"
+                  className="flex items-center space-x-3 px-6 py-3 bg-white text-gray-900 rounded-full font-bold hover:scale-105 transition-transform shadow-lg shadow-white/5"
                 >
-                  <span className="text-2xl font-serif">077 338 6064</span>
+                  <Phone className="h-5 w-5 text-brand-primary" />
+                  <span className="text-xl">077 338 6064</span>
                 </a>
                 <Link 
                   to="/contact" 
-                  className="px-10 py-5 bg-brand-primary text-white rounded-full font-bold hover:scale-105 transition-transform flex items-center space-x-3"
+                  className="px-8 py-3 bg-brand-primary text-white rounded-full font-bold hover:scale-105 transition-transform flex items-center space-x-2 text-sm"
                 >
                   <span>Let's Connect</span>
-                  <ArrowRight className="h-5 w-5" />
+                  <ArrowRight className="h-4 w-4" />
                 </Link>
              </div>
            </div>
