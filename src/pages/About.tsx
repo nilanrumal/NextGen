@@ -1,9 +1,27 @@
 import { motion } from 'motion/react';
-import { Shield, Target, Award, CheckCircle2, Mail } from 'lucide-react';
+import { Shield, Target, Award, CheckCircle2, Mail, Loader2 } from 'lucide-react';
 import LeadershipSection from '../components/About/LeadershipSection';
 import StrategyFramework from '../components/About/StrategyFramework';
+import { useState, useEffect } from 'react';
+import { db } from '../lib/firebase';
+import { doc, onSnapshot } from 'firebase/firestore';
 
 export default function About() {
+  const [config, setConfig] = useState<any>({
+    about: {
+      image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=1976&auto=format&fit=crop"
+    }
+  });
+
+  useEffect(() => {
+    const unsubscribe = onSnapshot(doc(db, 'siteConfig', 'current'), (snapshot) => {
+      if (snapshot.exists()) {
+        setConfig((prev: any) => ({ ...prev, ...snapshot.data() }));
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
   return (
     <div className="pt-20">
       <section className="py-24 bg-white">
@@ -16,7 +34,7 @@ export default function About() {
               className="relative"
             >
               <img 
-                src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=1976&auto=format&fit=crop" 
+                src={config.about?.image || "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=1976&auto=format&fit=crop"} 
                 alt="Our Leadership" 
                 className="rounded-[3rem] shadow-2xl relative z-10 aspect-square object-cover"
                 referrerPolicy="no-referrer"

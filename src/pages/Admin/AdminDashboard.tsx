@@ -24,6 +24,12 @@ export default function AdminDashboard() {
     services: [],
     contact: { hotline: '', email: '', address: '', whatsapp: '' },
     clientLogos: [],
+    visuals: {
+      logo: '',
+      whyChooseUs: '',
+      announcement: '',
+      vision: '',
+    },
     knowledgeBase: ''
   });
   const [activeTab, setActiveTab] = useState<'chats' | 'site' | 'services' | 'visual' | 'knowledge'>('chats');
@@ -587,6 +593,29 @@ export default function AdminDashboard() {
               </div>
 
               <div className="space-y-8">
+                {/* Global Assets */}
+                <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-xl space-y-6">
+                  <h3 className="text-xl font-bold flex items-center space-x-2 text-gray-700">
+                    <Shield className="h-5 w-5 text-brand-primary" />
+                    <span>Identity & Branding</span>
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold uppercase tracking-widest text-gray-400">Website Logo URL</label>
+                        <input 
+                          value={siteConfig.visuals?.logo}
+                          onChange={(e) => setSiteConfig({...siteConfig, visuals: {...siteConfig.visuals, logo: e.target.value}})}
+                          className="w-full p-4 bg-gray-50 rounded-2xl border-none focus:ring-2 focus:ring-brand-primary outline-none" 
+                        />
+                      </div>
+                      <div className="h-20 p-4 bg-gray-100 rounded-2xl flex items-center justify-center">
+                        {siteConfig.visuals?.logo ? <img src={siteConfig.visuals.logo} className="max-h-full object-contain" alt="Logo Preview" /> : <ImageIcon className="text-gray-300" />}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Major Images */}
                 <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-xl space-y-6">
                   <h3 className="text-xl font-bold flex items-center space-x-2 text-gray-700">
@@ -618,6 +647,32 @@ export default function AdminDashboard() {
                       </div>
                       <div className="aspect-video rounded-3xl overflow-hidden bg-gray-100 border border-gray-200">
                         {siteConfig.about?.image && <img src={siteConfig.about.image} className="w-full h-full object-cover" alt="About Preview" />}
+                      </div>
+                    </div>
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold uppercase tracking-widest text-gray-400">Why Choose Us Image URL</label>
+                        <input 
+                          value={siteConfig.visuals?.whyChooseUs}
+                          onChange={(e) => setSiteConfig({...siteConfig, visuals: {...siteConfig.visuals, whyChooseUs: e.target.value}})}
+                          className="w-full p-4 bg-gray-50 rounded-2xl border-none focus:ring-2 focus:ring-brand-primary outline-none" 
+                        />
+                      </div>
+                      <div className="aspect-video rounded-3xl overflow-hidden bg-gray-100 border border-gray-200">
+                        {siteConfig.visuals?.whyChooseUs && <img src={siteConfig.visuals.whyChooseUs} className="w-full h-full object-cover" alt="Why Choose Us Preview" />}
+                      </div>
+                    </div>
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold uppercase tracking-widest text-gray-400">Announcement Image URL (e.g. Dr. Kamal)</label>
+                        <input 
+                          value={siteConfig.visuals?.announcement}
+                          onChange={(e) => setSiteConfig({...siteConfig, visuals: {...siteConfig.visuals, announcement: e.target.value}})}
+                          className="w-full p-4 bg-gray-50 rounded-2xl border-none focus:ring-2 focus:ring-brand-primary outline-none" 
+                        />
+                      </div>
+                      <div className="aspect-video rounded-3xl overflow-hidden bg-gray-100 border border-gray-200">
+                        {siteConfig.visuals?.announcement && <img src={siteConfig.visuals.announcement} className="w-full h-full object-cover" alt="Announcement Preview" />}
                       </div>
                     </div>
                   </div>

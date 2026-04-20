@@ -80,6 +80,11 @@ export default function Home() {
     },
     services: services,
     clientLogos: DEFAULT_LOGOS,
+    visuals: {
+      logo: '',
+      whyChooseUs: 'https://images.unsplash.com/photo-1600880212319-462799b66821?q=80&w=2070&auto=format&fit=crop',
+      announcement: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=1976&auto=format&fit=crop',
+    }
   });
 
   useEffect(() => {
@@ -256,9 +261,9 @@ export default function Home() {
               </div>
             </div>
             <div className="lg:w-1/2 relative">
-              <div className="relative z-10 rounded-[3rem] overflow-hidden shadow-2xl">
+              <div className="relative z-10 rounded-[3rem] overflow-hidden shadow-2xl h-[400px] lg:h-[600px]">
                 <img 
-                  src="https://images.unsplash.com/photo-1600880212319-462799b66821?q=80&w=2070&auto=format&fit=crop" 
+                  src={config.visuals?.whyChooseUs || "https://images.unsplash.com/photo-1600880212319-462799b66821?q=80&w=2070&auto=format&fit=crop"} 
                   alt="Why Choose Us" 
                   className="w-full h-full object-cover"
                   referrerPolicy="no-referrer"
@@ -277,8 +282,8 @@ export default function Home() {
           <div className="bg-white rounded-[3rem] shadow-2xl shadow-gray-200 overflow-hidden border border-gray-100 flex flex-col lg:flex-row items-center">
             <div className="w-full lg:w-1/2 relative h-[400px] lg:h-[600px]">
               <img 
-                src="https://firebasestorage.googleapis.com/v0/b/antigravity-ai.appspot.com/o/attachments%2F1745089775369_input_file_0.png?alt=media" 
-                alt="Dr. Kamal Peiris" 
+                src={config.visuals?.announcement || "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=1976&auto=format&fit=crop"} 
+                alt="Strategic Announcement" 
                 className="w-full h-full object-cover"
                 referrerPolicy="no-referrer"
               />

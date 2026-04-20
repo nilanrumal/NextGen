@@ -1,9 +1,24 @@
 import { Link } from 'react-router-dom';
 import { Briefcase, Menu, X } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { db } from '../lib/firebase';
+import { doc, onSnapshot } from 'firebase/firestore';
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const [logo, setLogo] = useState('https://images.unsplash.com/photo-1614850523296-d8c1af93d400?q=80&w=2070&auto=format&fit=crop');
+
+  useEffect(() => {
+    const unsubscribe = onSnapshot(doc(db, 'siteConfig', 'current'), (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        if (data.visuals?.logo) {
+          setLogo(data.visuals.logo);
+        }
+      }
+    });
+    return () => unsubscribe();
+  }, []);
 
   return (
     <nav className="bg-white border-b border-gray-100 sticky top-0 z-50">
@@ -12,9 +27,9 @@ export default function Navbar() {
           <div className="flex items-center">
             <Link to="/" className="flex items-center">
               <img 
-                src="https://firebasestorage.googleapis.com/v0/b/antigravity-ai.appspot.com/o/attachments%2F1745090223594_input_file_0.png?alt=media" 
+                src={logo} 
                 alt="NextGen Logo" 
-                className="h-16 w-auto"
+                className="h-12 w-auto"
                 referrerPolicy="no-referrer"
               />
             </Link>
