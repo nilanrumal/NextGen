@@ -87,7 +87,8 @@ export default function AdminDashboard() {
 
     socketRef.current.emit('join_admin');
     socketRef.current.on('notify_handover', (data) => {
-      toast("Human assistance requested!", { icon: '🔔', duration: 6000 });
+      const identifier = data.userName || data.userEmail || 'A client';
+      toast(`${identifier} requested human assistance!`, { icon: '🔔', duration: 8000 });
       notificationSound.current?.play().catch(e => console.log("Sound blocked", e));
     });
 
@@ -306,7 +307,7 @@ export default function AdminDashboard() {
                       <div className="overflow-hidden flex-grow">
                         <div className="flex justify-between items-center mb-1">
                           <span className={cn("text-sm transition-colors", !chat.isReadByAdmin ? "font-black text-gray-900" : "font-bold text-gray-600")}>
-                            {chat.userName || 'Anonymous Client'}
+                            {chat.userName || chat.userEmail || 'Anonymous Client'}
                           </span>
                           <span className="text-[10px] text-gray-400 font-medium">{chat.updatedAt?.toDate ? chat.updatedAt.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '...'}</span>
                         </div>
