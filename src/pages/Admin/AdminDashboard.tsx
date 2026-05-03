@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { db, auth } from '../../lib/firebase';
+import { db, auth, storage } from '../../lib/firebase';
 import { collection, query, orderBy, onSnapshot, doc, updateDoc, addDoc, serverTimestamp, getDoc, setDoc } from 'firebase/firestore';
-import { MessageSquare, Settings, Users, Shield, Send, Bell, Bot, Trash2, Plus, Image as ImageIcon, AlertCircle, Loader2, Target } from 'lucide-react';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { MessageSquare, Settings, Users, Shield, Send, Bell, Bot, Trash2, Plus, Image as ImageIcon, AlertCircle, Loader2, Target, Upload } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
 import toast from 'react-hot-toast';
 import { cn } from '../../lib/utils';
@@ -171,6 +172,64 @@ export default function AdminDashboard() {
   const saveConfig = async () => {
     await setDoc(doc(db, 'siteConfig', 'current'), siteConfig);
     toast.success("Site configuration updated!");
+  };
+
+  const ImageUploader = ({ label, currentUrl, onUpload, folder = 'site' }: { label: string, currentUrl: string, onUpload: (url: string) => void, folder?: string }) => {
+    const [uploading, setUploading] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      setUploading(true);
+      const loadingToast = toast.loading(`Uploading ${label}...`);
+
+      try {
+        const storageRef = ref(storage, `${folder}/${Date.now()}_${file.name}`);
+        const snapshot = await uploadBytes(storageRef, file);
+        const url = await getDownloadURL(snapshot.ref);
+        onUpload(url);
+        toast.success(`${label} uploaded successfully!`, { id: loadingToast });
+      } catch (error) {
+        console.error("Upload error:", error);
+        toast.error(`Failed to upload ${label}`, { id: loadingToast });
+      } finally {
+        setUploading(false);
+      }
+    };
+
+    return (
+      <div className="space-y-2">
+        <label className="text-xs font-bold uppercase tracking-widest text-gray-400 flex justify-between items-center">
+          <span>{label}</span>
+          {uploading && <Loader2 className="h-3 w-3 animate-spin text-brand-primary" />}
+        </label>
+        <div className="relative group">
+          <input 
+            value={currentUrl}
+            onChange={(e) => onUpload(e.target.value)}
+            className="w-full p-4 bg-gray-50 rounded-2xl border-none focus:ring-2 focus:ring-brand-primary outline-none pr-12" 
+            placeholder="Image URL or upload..."
+          />
+          <button 
+            type="button"
+            disabled={uploading}
+            onClick={() => fileInputRef.current?.click()}
+            className="absolute right-2 top-2 p-2 bg-white rounded-xl shadow-sm hover:bg-gray-50 transition-all text-gray-400 hover:text-brand-primary border border-gray-100"
+          >
+            <Upload className="h-5 w-5" />
+          </button>
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            onChange={handleFileChange} 
+            className="hidden" 
+            accept="image/*" 
+          />
+        </div>
+      </div>
+    );
   };
 
   if (isChecking) {
@@ -601,15 +660,13 @@ export default function AdminDashboard() {
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div className="space-y-4">
-                      <div className="space-y-2">
-                        <label className="text-xs font-bold uppercase tracking-widest text-gray-400">Website Logo URL</label>
-                        <input 
-                          value={siteConfig.visuals?.logo}
-                          onChange={(e) => setSiteConfig({...siteConfig, visuals: {...siteConfig.visuals, logo: e.target.value}})}
-                          className="w-full p-4 bg-gray-50 rounded-2xl border-none focus:ring-2 focus:ring-brand-primary outline-none" 
-                        />
-                      </div>
-                      <div className="h-20 p-4 bg-gray-100 rounded-2xl flex items-center justify-center">
+                      <ImageUploader 
+                        label="Website Logo"
+                        currentUrl={siteConfig.visuals?.logo}
+                        onUpload={(url) => setSiteConfig({...siteConfig, visuals: {...siteConfig.visuals, logo: url}})}
+                        folder="branding"
+                      />
+                      <div className="h-20 p-4 bg-gray-100 rounded-2xl flex items-center justify-center border border-gray-200">
                         {siteConfig.visuals?.logo ? <img src={siteConfig.visuals.logo} className="max-h-full object-contain" alt="Logo Preview" /> : <ImageIcon className="text-gray-300" />}
                       </div>
                     </div>
@@ -624,53 +681,41 @@ export default function AdminDashboard() {
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div className="space-y-4">
-                      <div className="space-y-2">
-                        <label className="text-xs font-bold uppercase tracking-widest text-gray-400">Hero Background URL</label>
-                        <input 
-                          value={siteConfig.hero?.image}
-                          onChange={(e) => setSiteConfig({...siteConfig, hero: {...siteConfig.hero, image: e.target.value}})}
-                          className="w-full p-4 bg-gray-50 rounded-2xl border-none focus:ring-2 focus:ring-brand-primary outline-none" 
-                        />
-                      </div>
+                      <ImageUploader 
+                        label="Hero Background"
+                        currentUrl={siteConfig.hero?.image}
+                        onUpload={(url) => setSiteConfig({...siteConfig, hero: {...siteConfig.hero, image: url}})}
+                      />
                       <div className="aspect-video rounded-3xl overflow-hidden bg-gray-100 border border-gray-200">
                         {siteConfig.hero?.image && <img src={siteConfig.hero.image} className="w-full h-full object-cover" alt="Hero Preview" />}
                       </div>
                     </div>
                     <div className="space-y-4">
-                      <div className="space-y-2">
-                        <label className="text-xs font-bold uppercase tracking-widest text-gray-400">About Section Image URL</label>
-                        <input 
-                          value={siteConfig.about?.image}
-                          onChange={(e) => setSiteConfig({...siteConfig, about: {...siteConfig.about, image: e.target.value}})}
-                          className="w-full p-4 bg-gray-50 rounded-2xl border-none focus:ring-2 focus:ring-brand-primary outline-none" 
-                        />
-                      </div>
+                      <ImageUploader 
+                        label="About Section Image"
+                        currentUrl={siteConfig.about?.image}
+                        onUpload={(url) => setSiteConfig({...siteConfig, about: {...siteConfig.about, image: url}})}
+                      />
                       <div className="aspect-video rounded-3xl overflow-hidden bg-gray-100 border border-gray-200">
                         {siteConfig.about?.image && <img src={siteConfig.about.image} className="w-full h-full object-cover" alt="About Preview" />}
                       </div>
                     </div>
                     <div className="space-y-4">
-                      <div className="space-y-2">
-                        <label className="text-xs font-bold uppercase tracking-widest text-gray-400">Why Choose Us Image URL</label>
-                        <input 
-                          value={siteConfig.visuals?.whyChooseUs}
-                          onChange={(e) => setSiteConfig({...siteConfig, visuals: {...siteConfig.visuals, whyChooseUs: e.target.value}})}
-                          className="w-full p-4 bg-gray-50 rounded-2xl border-none focus:ring-2 focus:ring-brand-primary outline-none" 
-                        />
-                      </div>
+                      <ImageUploader 
+                        label="Why Choose Us Image"
+                        currentUrl={siteConfig.visuals?.whyChooseUs}
+                        onUpload={(url) => setSiteConfig({...siteConfig, visuals: {...siteConfig.visuals, whyChooseUs: url}})}
+                      />
                       <div className="aspect-video rounded-3xl overflow-hidden bg-gray-100 border border-gray-200">
                         {siteConfig.visuals?.whyChooseUs && <img src={siteConfig.visuals.whyChooseUs} className="w-full h-full object-cover" alt="Why Choose Us Preview" />}
                       </div>
                     </div>
                     <div className="space-y-4">
-                      <div className="space-y-2">
-                        <label className="text-xs font-bold uppercase tracking-widest text-gray-400">Announcement Image URL (e.g. Dr. Kamal)</label>
-                        <input 
-                          value={siteConfig.visuals?.announcement}
-                          onChange={(e) => setSiteConfig({...siteConfig, visuals: {...siteConfig.visuals, announcement: e.target.value}})}
-                          className="w-full p-4 bg-gray-50 rounded-2xl border-none focus:ring-2 focus:ring-brand-primary outline-none" 
-                        />
-                      </div>
+                      <ImageUploader 
+                        label="Announcement Image (e.g. Dr. Kamal)"
+                        currentUrl={siteConfig.visuals?.announcement}
+                        onUpload={(url) => setSiteConfig({...siteConfig, visuals: {...siteConfig.visuals, announcement: url}})}
+                      />
                       <div className="aspect-video rounded-3xl overflow-hidden bg-gray-100 border border-gray-200">
                         {siteConfig.visuals?.announcement && <img src={siteConfig.visuals.announcement} className="w-full h-full object-cover" alt="Announcement Preview" />}
                       </div>
