@@ -182,41 +182,28 @@ export default function AdminDashboard() {
       const file = e.target.files?.[0];
       if (!file) return;
 
+      // Basic validation
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("File is too large. Max 5MB.");
+        return;
+      }
+
       setUploading(true);
       const loadingToast = toast.loading(`Uploading ${label}...`);
 
       try {
         console.log(`[Upload] Starting upload for ${label}...`);
-        console.log(`[Upload] Content Type: ${file.type}, Size: ${file.size} bytes`);
-        
         const storageRef = ref(storage, `${folder}/${Date.now()}_${file.name}`);
-        console.log(`[Upload] Target Reference: ${storageRef.fullPath}`);
-        
         const snapshot = await uploadBytes(storageRef, file);
-        console.log("[Upload] Success! Snapshot received:", snapshot);
-        
         const url = await getDownloadURL(snapshot.ref);
-        console.log("[Upload] Download URL available:", url);
-        
         onUpload(url);
         toast.success(`${label} uploaded successfully!`, { id: loadingToast });
       } catch (error: any) {
-        console.error("[Upload] Critical Error:", error);
-        
-        let errorMessage = "Failed to upload. ";
-        if (error.code === 'storage/unauthorized') {
-          errorMessage += "Permission denied. Check your Firebase Storage rules.";
-        } else if (error.code === 'storage/retry-limit-exceeded') {
-          errorMessage += "Upload timed out. Is your internet connection stable?";
-        } else if (error.code === 'storage/invalid-checksum') {
-          errorMessage += "File corrupted during upload.";
-        } else {
-          errorMessage += error.message || "Unknown error occurred.";
-        }
-        
-        toast.error(errorMessage, { id: loadingToast, duration: 6000 });
+        console.error("[Upload] Error:", error);
+        toast.error(`Upload failed: ${error.message || 'Unknown error'}`, { id: loadingToast });
       } finally {
         setUploading(false);
+        if (fileInputRef.current) fileInputRef.current.value = '';
       }
     };
 
@@ -226,21 +213,34 @@ export default function AdminDashboard() {
           <span>{label}</span>
           {uploading && <Loader2 className="h-3 w-3 animate-spin text-brand-primary" />}
         </label>
-        <div className="relative group">
-          <input 
-            value={currentUrl}
-            onChange={(e) => onUpload(e.target.value)}
-            className="w-full p-4 bg-gray-50 rounded-2xl border-none focus:ring-2 focus:ring-brand-primary outline-none pr-12" 
-            placeholder="Image URL or upload..."
-          />
+        <div className="flex space-x-2">
+          <div className="relative flex-grow">
+            <input 
+              value={currentUrl || ''}
+              onChange={(e) => onUpload(e.target.value)}
+              className="w-full p-4 bg-gray-50 rounded-2xl border-none focus:ring-2 focus:ring-brand-primary outline-none" 
+              placeholder="Image URL or upload..."
+            />
+          </div>
           <button 
             type="button"
             disabled={uploading}
             onClick={() => fileInputRef.current?.click()}
-            className="absolute right-2 top-2 p-2 bg-white rounded-xl shadow-sm hover:bg-gray-50 transition-all text-gray-400 hover:text-brand-primary border border-gray-100"
+            className="p-4 bg-white rounded-2xl shadow-sm hover:bg-gray-50 transition-all text-gray-400 hover:text-brand-primary border border-gray-100 flex items-center justify-center shrink-0"
+            title="Upload Image"
           >
             <Upload className="h-5 w-5" />
           </button>
+          {currentUrl && (
+            <button 
+              type="button"
+              onClick={() => onUpload('')}
+              className="p-4 bg-red-50 rounded-2xl text-red-500 hover:bg-red-100 transition-all flex items-center justify-center shrink-0"
+              title="Clear Image"
+            >
+              <Trash2 className="h-5 w-5" />
+            </button>
+          )}
           <input 
             type="file" 
             ref={fileInputRef} 
@@ -758,28 +758,22 @@ export default function AdminDashboard() {
                       <Plus className="h-5 w-5" />
                     </button>
                   </div>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-1 gap-6">
                     {(siteConfig.clientLogos || []).map((logo: string, idx: number) => (
-                      <div key={idx} className="relative group p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                        <button 
-                          onClick={() => setSiteConfig({...siteConfig, clientLogos: siteConfig.clientLogos.filter((_: any, i: number) => i !== idx)})}
-                          className="absolute -top-2 -right-2 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-all shadow-lg"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </button>
-                        <div className="h-16 flex items-center justify-center mb-3">
-                          {logo ? <img src={logo} className="max-h-full object-contain" alt={`Logo ${idx}`} /> : <ImageIcon className="h-8 w-8 text-gray-200" />}
-                        </div>
-                        <input 
-                          value={logo}
-                          onChange={(e) => {
+                      <div key={idx} className="bg-gray-50 p-6 rounded-3xl border border-gray-100 relative group">
+                        <ImageUploader 
+                          label={`Partner Logo #${idx + 1}`}
+                          currentUrl={logo}
+                          onUpload={(url) => {
                             const updated = [...siteConfig.clientLogos];
-                            updated[idx] = e.target.value;
+                            updated[idx] = url;
                             setSiteConfig({...siteConfig, clientLogos: updated});
                           }}
-                          placeholder="Image URL..."
-                          className="w-full p-2 bg-white rounded-lg text-[10px] border-none focus:ring-1 focus:ring-brand-primary outline-none"
+                          folder="partners"
                         />
+                        <div className="h-20 mt-4 bg-white rounded-xl flex items-center justify-center border border-gray-100 overflow-hidden">
+                          {logo ? <img src={logo} className="max-h-full object-contain" alt={`Logo ${idx}`} /> : <ImageIcon className="h-8 w-8 text-gray-200" />}
+                        </div>
                       </div>
                     ))}
                   </div>
