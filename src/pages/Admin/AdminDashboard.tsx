@@ -186,14 +186,35 @@ export default function AdminDashboard() {
       const loadingToast = toast.loading(`Uploading ${label}...`);
 
       try {
+        console.log(`[Upload] Starting upload for ${label}...`);
+        console.log(`[Upload] Content Type: ${file.type}, Size: ${file.size} bytes`);
+        
         const storageRef = ref(storage, `${folder}/${Date.now()}_${file.name}`);
+        console.log(`[Upload] Target Reference: ${storageRef.fullPath}`);
+        
         const snapshot = await uploadBytes(storageRef, file);
+        console.log("[Upload] Success! Snapshot received:", snapshot);
+        
         const url = await getDownloadURL(snapshot.ref);
+        console.log("[Upload] Download URL available:", url);
+        
         onUpload(url);
         toast.success(`${label} uploaded successfully!`, { id: loadingToast });
-      } catch (error) {
-        console.error("Upload error:", error);
-        toast.error(`Failed to upload ${label}`, { id: loadingToast });
+      } catch (error: any) {
+        console.error("[Upload] Critical Error:", error);
+        
+        let errorMessage = "Failed to upload. ";
+        if (error.code === 'storage/unauthorized') {
+          errorMessage += "Permission denied. Check your Firebase Storage rules.";
+        } else if (error.code === 'storage/retry-limit-exceeded') {
+          errorMessage += "Upload timed out. Is your internet connection stable?";
+        } else if (error.code === 'storage/invalid-checksum') {
+          errorMessage += "File corrupted during upload.";
+        } else {
+          errorMessage += error.message || "Unknown error occurred.";
+        }
+        
+        toast.error(errorMessage, { id: loadingToast, duration: 6000 });
       } finally {
         setUploading(false);
       }
