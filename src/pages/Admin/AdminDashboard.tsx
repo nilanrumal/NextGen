@@ -7,7 +7,7 @@ import { io, Socket } from 'socket.io-client';
 import toast from 'react-hot-toast';
 import { cn } from '../../lib/utils';
 import { signOut } from 'firebase/auth';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
 
 export default function AdminDashboard() {
@@ -21,6 +21,7 @@ export default function AdminDashboard() {
   const [input, setInput] = useState('');
   const [siteConfig, setSiteConfig] = useState<any>({
     hero: { title: '', subtitle: '', ctaText: '', image: '' },
+    banners: [],
     about: { title: '', content: '', image: '' },
     services: [],
     contact: { hotline: '', email: '', address: '', whatsapp: '' },
@@ -33,6 +34,7 @@ export default function AdminDashboard() {
     },
     knowledgeBase: ''
   });
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [activeTab, setActiveTab] = useState<'chats' | 'site' | 'services' | 'visual' | 'knowledge'>('chats');
   const notificationSound = useRef<HTMLAudioElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
@@ -108,10 +110,38 @@ export default function AdminDashboard() {
     const unsubscribeConfig = onSnapshot(configDoc, (snapshot) => {
       if (snapshot.exists()) {
         const data = snapshot.data();
-        setSiteConfig((prev: any) => ({
-          ...prev,
-          ...data
-        }));
+        setSiteConfig((prev: any) => {
+          const loadedBanners = data.banners && data.banners.length > 0 
+            ? data.banners 
+            : (prev.banners && prev.banners.length > 0 ? prev.banners : [
+                {
+                  title: "Empowering Enterprises. Enabling Legacies.",
+                  subtitle: "Strategic Consultancy",
+                  image: "https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=2069&auto=format&fit=crop",
+                  ctaText: "Explore Services",
+                  ctaLink: "/hire"
+                },
+                {
+                  title: "Turning Insight into Impact, Strategy into Results.",
+                  subtitle: "Accuracy & Compliance",
+                  image: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?q=80&w=2011&auto=format&fit=crop",
+                  ctaText: "Consult Now",
+                  ctaLink: "/contact"
+                },
+                {
+                  title: "Global Standards, Professional Excellence",
+                  subtitle: "NextGen Consultants",
+                  image: "https://images.unsplash.com/photo-1573161559525-4607c60f438a?q=80&w=2069&auto=format&fit=crop",
+                  ctaText: "About Our Team",
+                  ctaLink: "/about"
+                }
+              ]);
+          return {
+            ...prev,
+            ...data,
+            banners: loadedBanners
+          };
+        });
       }
     });
 
@@ -170,8 +200,33 @@ export default function AdminDashboard() {
   };
 
   const saveConfig = async () => {
-    await setDoc(doc(db, 'siteConfig', 'current'), siteConfig);
-    toast.success("Site configuration updated!");
+    const loadingToast = toast.loading("Updating configuration...");
+    try {
+      const updatedConfig = { ...siteConfig };
+      
+      // Auto-assign first slide to legacy siteConfig.hero for compatibility
+      if (siteConfig.banners && siteConfig.banners.length > 0) {
+        updatedConfig.hero = {
+          title: siteConfig.banners[0].title || '',
+          subtitle: siteConfig.banners[0].subtitle || '',
+          image: siteConfig.banners[0].image || '',
+          ctaText: siteConfig.banners[0].ctaText || '',
+          ctaLink: siteConfig.banners[0].ctaLink || ''
+        };
+      }
+      
+      // Also make sure logo is saved directly at root level as a robust backup
+      if (siteConfig.visuals?.logo) {
+        updatedConfig.logo = siteConfig.visuals.logo;
+      }
+
+      await setDoc(doc(db, 'siteConfig', 'current'), updatedConfig);
+      toast.success("Site configuration updated successfully!", { id: loadingToast });
+      setShowSuccessModal(true); // Open the success confirmation modal!
+    } catch (error) {
+      console.error("Save error:", error);
+      toast.error("Failed to update configuration.", { id: loadingToast });
+    }
   };
 
   const ImageUploader = ({ label, currentUrl, onUpload, folder = 'site' }: { label: string, currentUrl: string, onUpload: (url: string) => void, folder?: string }) => {
@@ -213,30 +268,30 @@ export default function AdminDashboard() {
           <span>{label}</span>
           {uploading && <Loader2 className="h-3 w-3 animate-spin text-brand-primary" />}
         </label>
-        <div className="flex space-x-2">
+        <div className="flex items-center gap-3">
           <div className="relative flex-grow">
             <input 
               value={currentUrl || ''}
               onChange={(e) => onUpload(e.target.value)}
-              className="w-full p-4 bg-gray-50 rounded-2xl border-none focus:ring-2 focus:ring-brand-primary outline-none" 
-              placeholder="Image URL or upload..."
+              className="w-full p-4 bg-gray-50 rounded-2xl border border-gray-100 focus:ring-2 focus:ring-brand-primary outline-none text-sm" 
+              placeholder="Paste Image URL here..."
             />
           </div>
           <button 
             type="button"
             disabled={uploading}
             onClick={() => fileInputRef.current?.click()}
-            className="p-4 bg-white rounded-2xl shadow-sm hover:bg-gray-50 transition-all text-gray-400 hover:text-brand-primary border border-gray-100 flex items-center justify-center shrink-0"
-            title="Upload Image"
+            className="flex items-center space-x-2 px-6 py-4 bg-brand-primary text-white rounded-2xl font-bold hover:bg-brand-secondary transition-all shadow-md disabled:opacity-50 shrink-0"
           >
-            <Upload className="h-5 w-5" />
+            <Upload className="h-4 w-4" />
+            <span className="text-xs uppercase tracking-wider">Upload</span>
           </button>
           {currentUrl && (
             <button 
               type="button"
               onClick={() => onUpload('')}
-              className="p-4 bg-red-50 rounded-2xl text-red-500 hover:bg-red-100 transition-all flex items-center justify-center shrink-0"
-              title="Clear Image"
+              className="p-4 bg-red-50 text-red-500 rounded-2xl hover:bg-red-100 transition-all border border-red-100 shrink-0"
+              title="Remove Image"
             >
               <Trash2 className="h-5 w-5" />
             </button>
@@ -249,6 +304,7 @@ export default function AdminDashboard() {
             accept="image/*" 
           />
         </div>
+        <p className="text-[10px] text-gray-400 font-medium italic">Paste a URL or click Upload to choose from your computer</p>
       </div>
     );
   };
@@ -482,46 +538,154 @@ export default function AdminDashboard() {
             <div className="max-w-4xl mx-auto">
               <div className="flex items-center justify-between mb-12">
                 <h2 className="text-3xl font-bold">Site Content</h2>
-                <button onClick={saveConfig} className="bg-brand-primary text-white px-8 py-3 rounded-full font-bold hover:bg-brand-secondary shadow-lg shadow-blue-500/20 transition-all">
-                  Save Changes
+                <button 
+                  onClick={saveConfig} 
+                  className="bg-orange-500 text-white px-8 py-3 rounded-full font-bold hover:bg-orange-600 shadow-lg shadow-orange-500/20 transition-all flex items-center space-x-2"
+                >
+                  <Send className="h-4 w-4" />
+                  <span>Update Config</span>
                 </button>
               </div>
 
               <div className="space-y-8">
-                {/* Hero Content */}
+                {/* Hero Slider Management */}
                 <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-xl space-y-6">
-                  <h3 className="text-xl font-bold mb-4 flex items-center space-x-2">
-                    <Target className="h-5 w-5 text-brand-primary" />
-                    <span>Hero Section</span>
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <label className="text-xs font-bold uppercase tracking-widest text-gray-400">Hero Title</label>
-                        <input 
-                          value={siteConfig.hero?.title}
-                          onChange={(e) => setSiteConfig({...siteConfig, hero: {...siteConfig.hero, title: e.target.value}})}
-                          className="w-full p-4 bg-gray-50 rounded-2xl border-none focus:ring-2 focus:ring-brand-primary outline-none" 
-                        />
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-xl font-bold flex items-center space-x-2">
+                      <Target className="h-5 w-5 text-brand-primary" />
+                      <span>Hero Slider / Slides Manager</span>
+                    </h3>
+                    <button 
+                      type="button"
+                      onClick={() => {
+                        const newSlide = {
+                          title: 'New Slide Title',
+                          subtitle: 'New Slide Subtitle',
+                          image: 'https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=2069&auto=format&fit=crop',
+                          ctaText: 'Learn More',
+                          ctaLink: '/hire'
+                        };
+                        setSiteConfig((prev: any) => ({
+                          ...prev,
+                          banners: [...(prev.banners || []), newSlide]
+                        }));
+                      }}
+                      className="flex items-center space-x-2 px-4 py-2 bg-gray-100 text-gray-600 rounded-full font-bold hover:bg-gray-200 transition-all text-xs"
+                    >
+                      <Plus className="h-4 w-4" />
+                      <span>Add Slide</span>
+                    </button>
+                  </div>
+
+                  <div className="space-y-6">
+                    {(siteConfig.banners || []).map((slide: any, idx: number) => (
+                      <div key={idx} className="p-6 bg-gray-50 rounded-3xl border border-gray-100 relative group">
+                        <div className="flex items-center justify-between mb-4">
+                          <span className="text-sm font-bold text-gray-500 uppercase tracking-wider">Slide #{idx + 1}</span>
+                          <button 
+                            type="button"
+                            onClick={() => {
+                              setSiteConfig((prev: any) => {
+                                const filtered = (prev.banners || []).filter((_: any, i: number) => i !== idx);
+                                return { ...prev, banners: filtered };
+                              });
+                            }}
+                            className="p-2 bg-red-50 text-red-500 rounded-xl hover:bg-red-100 transition-all"
+                            title="Delete Slide"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div className="space-y-4">
+                            <div className="space-y-2">
+                              <label className="text-xs font-bold uppercase tracking-widest text-gray-400">Slide Title</label>
+                              <input 
+                                value={slide.title || ''}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  setSiteConfig((prev: any) => {
+                                    const updated = [...(prev.banners || [])];
+                                    updated[idx] = { ...updated[idx], title: val };
+                                    return { ...prev, banners: updated };
+                                  });
+                                }}
+                                className="w-full p-4 bg-white rounded-2xl border border-gray-100 focus:ring-2 focus:ring-brand-primary outline-none" 
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <label className="text-xs font-bold uppercase tracking-widest text-gray-400">Subtitle / Category Tag</label>
+                              <input 
+                                value={slide.subtitle || ''}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  setSiteConfig((prev: any) => {
+                                    const updated = [...(prev.banners || [])];
+                                    updated[idx] = { ...updated[idx], subtitle: val };
+                                    return { ...prev, banners: updated };
+                                  });
+                                }}
+                                className="w-full p-4 bg-white rounded-2xl border border-gray-100 focus:ring-2 focus:ring-brand-primary outline-none" 
+                              />
+                            </div>
+                          </div>
+
+                          <div className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <label className="text-xs font-bold uppercase tracking-widest text-gray-400">CTA Text</label>
+                                <input 
+                                  value={slide.ctaText || ''}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    setSiteConfig((prev: any) => {
+                                      const updated = [...(prev.banners || [])];
+                                      updated[idx] = { ...updated[idx], ctaText: val };
+                                      return { ...prev, banners: updated };
+                                    });
+                                  }}
+                                  className="w-full p-4 bg-white rounded-2xl border border-gray-100 focus:ring-2 focus:ring-brand-primary outline-none" 
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <label className="text-xs font-bold uppercase tracking-widest text-gray-400">CTA Link</label>
+                                <input 
+                                  value={slide.ctaLink || ''}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    setSiteConfig((prev: any) => {
+                                      const updated = [...(prev.banners || [])];
+                                      updated[idx] = { ...updated[idx], ctaLink: val };
+                                      return { ...prev, banners: updated };
+                                    });
+                                  }}
+                                  className="w-full p-4 bg-white rounded-2xl border border-gray-100 focus:ring-2 focus:ring-brand-primary outline-none" 
+                                />
+                              </div>
+                            </div>
+
+                            <ImageUploader 
+                              label="Slide Background Image"
+                              currentUrl={slide.image || ''}
+                              onUpload={(url) => {
+                                setSiteConfig((prev: any) => {
+                                  const updated = [...(prev.banners || [])];
+                                  updated[idx] = { ...updated[idx], image: url };
+                                  return { ...prev, banners: updated };
+                                });
+                              }}
+                              folder="hero-slides"
+                            />
+                            {slide.image && (
+                              <div className="aspect-[21/9] rounded-2xl overflow-hidden bg-gray-100 border border-gray-100 mt-2">
+                                <img src={slide.image} className="w-full h-full object-cover" alt="Slide preview" />
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                      <div className="space-y-2">
-                        <label className="text-xs font-bold uppercase tracking-widest text-gray-400">CTA Button Text</label>
-                        <input 
-                          value={siteConfig.hero?.ctaText}
-                          onChange={(e) => setSiteConfig({...siteConfig, hero: {...siteConfig.hero, ctaText: e.target.value}})}
-                          className="w-full p-4 bg-gray-50 rounded-2xl border-none focus:ring-2 focus:ring-brand-primary outline-none" 
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-xs font-bold uppercase tracking-widest text-gray-400">Hero Subtitle</label>
-                      <textarea 
-                        value={siteConfig.hero?.subtitle}
-                        onChange={(e) => setSiteConfig({...siteConfig, hero: {...siteConfig.hero, subtitle: e.target.value}})}
-                        rows={5}
-                        className="w-full p-4 bg-gray-50 rounded-2xl border-none focus:ring-2 focus:ring-brand-primary outline-none resize-none" 
-                      />
-                    </div>
+                    ))}
                   </div>
                 </div>
 
@@ -604,16 +768,22 @@ export default function AdminDashboard() {
                 <div className="flex space-x-4">
                   <button 
                     onClick={() => {
-                      const newServices = [...(siteConfig.services || []), { title: 'New Service', description: '', icon: 'Briefcase' }];
-                      setSiteConfig({...siteConfig, services: newServices});
+                      setSiteConfig((prev: any) => ({
+                        ...prev,
+                        services: [...(prev.services || []), { title: 'New Service', description: '', icon: 'Briefcase' }]
+                      }));
                     }}
-                    className="flex items-center space-x-2 px-6 py-2 bg-gray-100 text-gray-600 rounded-full font-bold hover:bg-gray-200 transition-all"
+                    className="flex items-center space-x-2 px-6 py-2 bg-gray-100 text-gray-600 rounded-full font-bold hover:bg-gray-200 transition-all text-xs"
                   >
                     <Plus className="h-5 w-5" />
                     <span>Add Service</span>
                   </button>
-                  <button onClick={saveConfig} className="bg-brand-primary text-white px-8 py-3 rounded-full font-bold hover:bg-brand-secondary shadow-lg transition-all">
-                    Save Services
+                  <button 
+                    onClick={saveConfig} 
+                    className="bg-orange-500 text-white px-8 py-3 rounded-full font-bold hover:bg-orange-600 shadow-lg shadow-orange-500/20 transition-all flex items-center space-x-2"
+                  >
+                    <Send className="h-4 w-4" />
+                    <span>Update Config</span>
                   </button>
                 </div>
               </div>
@@ -623,8 +793,10 @@ export default function AdminDashboard() {
                   <div key={index} className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-xl relative group">
                     <button 
                       onClick={() => {
-                        const filtered = siteConfig.services.filter((_: any, i: number) => i !== index);
-                        setSiteConfig({...siteConfig, services: filtered});
+                        setSiteConfig((prev: any) => ({
+                          ...prev,
+                          services: (prev.services || []).filter((_: any, i: number) => i !== index)
+                        }));
                       }}
                       className="absolute top-4 right-4 p-2 bg-red-50 text-red-500 rounded-xl opacity-0 group-hover:opacity-100 transition-all"
                     >
@@ -636,24 +808,42 @@ export default function AdminDashboard() {
                         <input 
                           value={service.title}
                           onChange={(e) => {
-                            const updated = [...siteConfig.services];
-                            updated[index].title = e.target.value;
-                            setSiteConfig({...siteConfig, services: updated});
+                            const val = e.target.value;
+                            setSiteConfig((prev: any) => {
+                              const updated = [...(prev.services || [])];
+                              if (updated[index]) updated[index] = { ...updated[index], title: val };
+                              return { ...prev, services: updated };
+                            });
                           }}
-                          className="w-full p-4 bg-gray-50 rounded-2xl border-none focus:ring-2 focus:ring-brand-primary outline-none font-bold" 
+                          className="w-full p-4 bg-gray-50 rounded-2xl border border-gray-100 focus:ring-2 focus:ring-brand-primary outline-none font-bold" 
                         />
                       </div>
+                      <ImageUploader 
+                        label="Service Image/Icon"
+                        currentUrl={service.image}
+                        onUpload={(url) => {
+                          setSiteConfig((prev: any) => {
+                            const updated = [...(prev.services || [])];
+                            if (updated[index]) updated[index] = { ...updated[index], image: url };
+                            return { ...prev, services: updated };
+                          });
+                        }}
+                        folder="services"
+                      />
                       <div className="space-y-2">
                         <label className="text-xs font-bold uppercase tracking-widest text-gray-400">Description</label>
                         <textarea 
                           value={service.description}
                           onChange={(e) => {
-                            const updated = [...siteConfig.services];
-                            updated[index].description = e.target.value;
-                            setSiteConfig({...siteConfig, services: updated});
+                            const val = e.target.value;
+                            setSiteConfig((prev: any) => {
+                              const updated = [...(prev.services || [])];
+                              if (updated[index]) updated[index] = { ...updated[index], description: val };
+                              return { ...prev, services: updated };
+                            });
                           }}
                           rows={3}
-                          className="w-full p-4 bg-gray-50 rounded-2xl border-none focus:ring-2 focus:ring-brand-primary outline-none resize-none text-sm" 
+                          className="w-full p-4 bg-gray-50 rounded-2xl border border-gray-100 focus:ring-2 focus:ring-brand-primary outline-none resize-none text-sm" 
                         />
                       </div>
                     </div>
@@ -667,8 +857,12 @@ export default function AdminDashboard() {
             <div className="max-w-4xl mx-auto">
               <div className="flex items-center justify-between mb-12">
                 <h2 className="text-3xl font-bold">Visual Assets</h2>
-                <button onClick={saveConfig} className="bg-brand-primary text-white px-8 py-3 rounded-full font-bold hover:bg-brand-secondary shadow-lg transition-all">
-                  Update Media
+                <button 
+                  onClick={saveConfig} 
+                  className="bg-orange-500 text-white px-8 py-3 rounded-full font-bold hover:bg-orange-600 shadow-lg shadow-orange-500/20 transition-all flex items-center space-x-2"
+                >
+                  <Send className="h-4 w-4" />
+                  <span>Update Config</span>
                 </button>
               </div>
 
@@ -684,7 +878,10 @@ export default function AdminDashboard() {
                       <ImageUploader 
                         label="Website Logo"
                         currentUrl={siteConfig.visuals?.logo}
-                        onUpload={(url) => setSiteConfig({...siteConfig, visuals: {...siteConfig.visuals, logo: url}})}
+                        onUpload={(url) => setSiteConfig((prev: any) => ({
+                          ...prev,
+                          visuals: { ...(prev.visuals || {}), logo: url }
+                        }))}
                         folder="branding"
                       />
                       <div className="h-20 p-4 bg-gray-100 rounded-2xl flex items-center justify-center border border-gray-200">
@@ -705,7 +902,10 @@ export default function AdminDashboard() {
                       <ImageUploader 
                         label="Hero Background"
                         currentUrl={siteConfig.hero?.image}
-                        onUpload={(url) => setSiteConfig({...siteConfig, hero: {...siteConfig.hero, image: url}})}
+                        onUpload={(url) => setSiteConfig((prev: any) => ({
+                          ...prev,
+                          hero: { ...(prev.hero || {}), image: url }
+                        }))}
                       />
                       <div className="aspect-video rounded-3xl overflow-hidden bg-gray-100 border border-gray-200">
                         {siteConfig.hero?.image && <img src={siteConfig.hero.image} className="w-full h-full object-cover" alt="Hero Preview" />}
@@ -715,7 +915,10 @@ export default function AdminDashboard() {
                       <ImageUploader 
                         label="About Section Image"
                         currentUrl={siteConfig.about?.image}
-                        onUpload={(url) => setSiteConfig({...siteConfig, about: {...siteConfig.about, image: url}})}
+                        onUpload={(url) => setSiteConfig((prev: any) => ({
+                          ...prev,
+                          about: { ...(prev.about || {}), image: url }
+                        }))}
                       />
                       <div className="aspect-video rounded-3xl overflow-hidden bg-gray-100 border border-gray-200">
                         {siteConfig.about?.image && <img src={siteConfig.about.image} className="w-full h-full object-cover" alt="About Preview" />}
@@ -725,7 +928,10 @@ export default function AdminDashboard() {
                       <ImageUploader 
                         label="Why Choose Us Image"
                         currentUrl={siteConfig.visuals?.whyChooseUs}
-                        onUpload={(url) => setSiteConfig({...siteConfig, visuals: {...siteConfig.visuals, whyChooseUs: url}})}
+                        onUpload={(url) => setSiteConfig((prev: any) => ({
+                          ...prev,
+                          visuals: { ...(prev.visuals || {}), whyChooseUs: url }
+                        }))}
                       />
                       <div className="aspect-video rounded-3xl overflow-hidden bg-gray-100 border border-gray-200">
                         {siteConfig.visuals?.whyChooseUs && <img src={siteConfig.visuals.whyChooseUs} className="w-full h-full object-cover" alt="Why Choose Us Preview" />}
@@ -735,7 +941,10 @@ export default function AdminDashboard() {
                       <ImageUploader 
                         label="Announcement Image (e.g. Dr. Kamal)"
                         currentUrl={siteConfig.visuals?.announcement}
-                        onUpload={(url) => setSiteConfig({...siteConfig, visuals: {...siteConfig.visuals, announcement: url}})}
+                        onUpload={(url) => setSiteConfig((prev: any) => ({
+                          ...prev,
+                          visuals: { ...(prev.visuals || {}), announcement: url }
+                        }))}
                       />
                       <div className="aspect-video rounded-3xl overflow-hidden bg-gray-100 border border-gray-200">
                         {siteConfig.visuals?.announcement && <img src={siteConfig.visuals.announcement} className="w-full h-full object-cover" alt="Announcement Preview" />}
@@ -752,7 +961,10 @@ export default function AdminDashboard() {
                       <span>Client & Partner Logos</span>
                     </h3>
                     <button 
-                      onClick={() => setSiteConfig({...siteConfig, clientLogos: [...(siteConfig.clientLogos || []), ""]})}
+                      onClick={() => setSiteConfig((prev: any) => ({
+                        ...prev,
+                        clientLogos: [...(prev.clientLogos || []), ""]
+                      }))}
                       className="p-3 bg-gray-50 text-gray-500 rounded-2xl hover:bg-brand-primary hover:text-white transition-all shadow-sm"
                     >
                       <Plus className="h-5 w-5" />
@@ -761,13 +973,24 @@ export default function AdminDashboard() {
                   <div className="grid grid-cols-1 gap-6">
                     {(siteConfig.clientLogos || []).map((logo: string, idx: number) => (
                       <div key={idx} className="bg-gray-50 p-6 rounded-3xl border border-gray-100 relative group">
+                        <button 
+                          onClick={() => setSiteConfig((prev: any) => {
+                            const updated = (prev.clientLogos || []).filter((_: any, i: number) => i !== idx);
+                            return { ...prev, clientLogos: updated };
+                          })}
+                          className="absolute top-4 right-4 p-2 bg-red-50 text-red-500 rounded-xl opacity-0 group-hover:opacity-100 transition-all"
+                        >
+                          <Trash2 className="h-5 w-5" />
+                        </button>
                         <ImageUploader 
                           label={`Partner Logo #${idx + 1}`}
                           currentUrl={logo}
                           onUpload={(url) => {
-                            const updated = [...siteConfig.clientLogos];
-                            updated[idx] = url;
-                            setSiteConfig({...siteConfig, clientLogos: updated});
+                            setSiteConfig((prev: any) => {
+                              const updated = [...(prev.clientLogos || [])];
+                              updated[idx] = url;
+                              return { ...prev, clientLogos: updated };
+                            });
                           }}
                           folder="partners"
                         />
@@ -795,19 +1018,62 @@ export default function AdminDashboard() {
               </div>
               <textarea 
                 value={siteConfig.knowledgeBase}
-                onChange={(e) => setSiteConfig({...siteConfig, knowledgeBase: e.target.value})}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setSiteConfig(prev => ({ ...prev, knowledgeBase: val }));
+                }}
                 className="flex-grow w-full p-8 bg-gray-50 rounded-[2rem] border-none focus:ring-2 focus:ring-brand-primary outline-none resize-none text-gray-700 font-medium leading-relaxed shadow-inner"
                 placeholder="Insert core business intelligence, employee lists, and system protocols here. The AI will use this to accurately respond to clients."
               />
               <div className="mt-8 flex justify-end">
-                <button onClick={saveConfig} className="bg-gray-900 text-white px-10 py-4 rounded-full font-bold text-lg hover:bg-brand-primary transition-all shadow-xl">
-                  Update AI Knowledge
+                <button 
+                  onClick={saveConfig} 
+                  className="bg-orange-500 text-white px-10 py-4 rounded-full font-bold text-lg hover:bg-orange-600 shadow-lg shadow-orange-500/20 transition-all flex items-center justify-center space-x-2"
+                >
+                  <Send className="h-5 w-5" />
+                  <span>Update Config</span>
                 </button>
               </div>
             </div>
           </div>
         )}
       </div>
+
+      {/* Confirmation Success Modal */}
+      <AnimatePresence>
+        {showSuccessModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-[3rem] p-10 max-w-md w-full shadow-2xl border border-gray-100 text-center relative overflow-hidden"
+            >
+              {/* Decorative top accent */}
+              <div className="absolute top-0 inset-x-0 h-2 bg-gradient-to-r from-orange-500 to-amber-500" />
+              
+              {/* Success Checkmark Circle */}
+              <div className="h-24 w-24 bg-green-50 rounded-[2.5rem] flex items-center justify-center mx-auto mb-6 border border-green-100 shadow-inner">
+                <svg className="h-12 w-12 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+
+              <h3 className="text-2xl font-serif font-bold text-gray-900 mb-2">Configuration Updated!</h3>
+              <p className="text-gray-500 text-sm leading-relaxed mb-8 px-4">
+                Awesome! Your website settings and uploaded files have been securely saved. The header, footer, logo, and hero slider have been updated in real-time across the entire platform.
+              </p>
+
+              <button
+                onClick={() => setShowSuccessModal(false)}
+                className="w-full py-4 bg-orange-500 text-white rounded-full font-bold hover:bg-orange-600 transition-all shadow-lg shadow-orange-500/20 active:scale-95"
+              >
+                Done
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

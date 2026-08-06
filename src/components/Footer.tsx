@@ -1,7 +1,25 @@
 import { Link } from 'react-router-dom';
 import { Briefcase, Mail, Phone, MapPin, Facebook, Linkedin, Twitter } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { db } from '../lib/firebase';
+import { doc, onSnapshot } from 'firebase/firestore';
 
 export default function Footer() {
+  const [logo, setLogo] = useState('https://firebasestorage.googleapis.com/v0/b/antigravity-ai.appspot.com/o/attachments%2F1745090223594_input_file_0.png?alt=media');
+
+  useEffect(() => {
+    const unsubscribe = onSnapshot(doc(db, 'siteConfig', 'current'), (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        const logoUrl = data.visuals?.logo || data.logo;
+        if (logoUrl) {
+          setLogo(logoUrl);
+        }
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
   return (
     <footer className="bg-gray-900 text-gray-300">
       <div className="max-w-7xl mx-auto px-4 py-16 sm:px-6 lg:px-8">
@@ -10,9 +28,9 @@ export default function Footer() {
           <div className="col-span-1 md:col-span-1">
             <Link to="/" className="flex items-center mb-6">
               <img 
-                src="https://firebasestorage.googleapis.com/v0/b/antigravity-ai.appspot.com/o/attachments%2F1745090223594_input_file_0.png?alt=media" 
+                src={logo} 
                 alt="NextGen Logo" 
-                className="h-16 w-auto bg-white p-2 rounded-lg"
+                className="h-16 w-auto bg-white p-2 rounded-lg object-contain"
                 referrerPolicy="no-referrer"
               />
             </Link>

@@ -102,7 +102,7 @@ export default function AdminLogin() {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="admin@nextgen.com"
+                    placeholder="nextgenconsultants1985@gmail.com"
                     className="w-full px-6 py-4 bg-gray-50 rounded-2xl border-none focus:ring-2 focus:ring-brand-primary outline-none text-sm transition-all shadow-inner"
                   />
                 </div>

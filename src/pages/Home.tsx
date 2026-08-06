@@ -74,6 +74,7 @@ export default function Home() {
       ctaText: "Explore Services",
       ctaLink: "/hire"
     },
+    banners: DEFAULT_BANNERS,
     about: {
       title: "Empowering Enterprises. Enabling Legacies.",
       content: "We help businesses and organizations enhance performance, solve complex challenges, and achieve sustainable growth. Serving micro businesses, SMEs, and large enterprises, we provide strategic guidance, operational support, and compliance solutions to deliver measurable results, both in Sri Lanka and globally."
@@ -95,6 +96,7 @@ export default function Home() {
           ...prev,
           ...data,
           hero: data.hero || prev.hero,
+          banners: data.banners && data.banners.length > 0 ? data.banners : (data.hero ? [data.hero] : prev.banners),
           about: data.about || prev.about,
           services: data.services && data.services.length > 0 ? data.services : prev.services,
           clientLogos: data.clientLogos || prev.clientLogos,
@@ -107,7 +109,7 @@ export default function Home() {
   return (
     <div className="overflow-hidden">
       {/* Animated Hero Section */}
-      <Hero banners={[config.hero]} />
+      <Hero banners={config.banners && config.banners.length > 0 ? config.banners : [config.hero]} />
 
       {/* Partners Marquee */}
       <LogoMarquee logos={config.clientLogos} />

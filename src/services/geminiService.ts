@@ -1,58 +1,25 @@
-import { GoogleGenAI } from "@google/genai";
-
-// Robust environment variable access for browser and node
-const getApiKey = () => {
-  // Try Vite-specific variable first
-  if (import.meta.env?.VITE_GEMINI_API_KEY) return import.meta.env.VITE_GEMINI_API_KEY;
-  // Try platform-injected process.env (fallback for server-side or define-replaced)
-  if (typeof process !== 'undefined' && process.env?.GEMINI_API_KEY) return process.env.GEMINI_API_KEY;
-  if (typeof process !== 'undefined' && process.env?.VITE_GEMINI_API_KEY) return process.env.VITE_GEMINI_API_KEY;
-  return null;
-};
-
-const apiKey = getApiKey();
-const ai = apiKey ? new GoogleGenAI({ apiKey }) : null;
-
-export async function getChatBotResponse(messages: { text: string, type: 'user' | 'bot' | 'agent' }[], siteConfig: any) {
-  const model = "gemini-3-flash-preview";
-  
-  if (!ai) {
-    console.error("CRITICAL: GEMINI_API_KEY is not defined.");
-    return "I apologize, our AI assistant is not properly configured. Please contact support or use the hotline.";
-  }
-
-  const systemInstruction = `
-    You are an AI Assistant for "NextGen Consultants & Doctors Pvt Ltd".
-    Company Info:
-    - Address: No. 185, Ebert Lane, Kaldemulla, Moratuwa. 10400
-    - Hotline: +94 77 338 6064
-    - Email: ceo@consultantsdoctors.com
-    - Services: Accounting, Tax Consulting, Internal Auditing, Company Secretarial Services, Management Consultancy, Preparation of Project Proposals.
-    - Style: Professional, friendly, and expert.
-    - Knowledge: ${siteConfig?.knowledgeBase || 'We are a leading financial consultancy in Sri Lanka.'}
-    
-    CRITICAL: 
-    - If the user explicitly asks to speak with a human, a real person, or an agent, or if you cannot answer a complex query after 2-3 attempts, you MUST output exactly: "[HANDOVER_REQUESTED]" followed by a reassuring message that a human agent is being notified.
-    - Do not make up prices. For rates, ask them to leave their contact details or speak to an agent.
-  `;
-
-  const contents = messages.map(m => ({
-    role: m.type === 'user' ? 'user' : 'model',
-    parts: [{ text: m.text }]
-  }));
-
+export async function getChatBotResponse(
+  messages: { text: string; type: 'user' | 'bot' | 'agent' }[],
+  siteConfig: any
+): Promise<string> {
   try {
-    const response = await ai.models.generateContent({
-      model,
-      contents,
-      config: {
-        systemInstruction,
-      }
+    const response = await fetch("/api/chat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ messages, siteConfig }),
     });
 
-    return response.text || "I'm sorry, I am having trouble connecting.";
+    if (!response.ok) {
+      const errData = await response.json().catch(() => ({}));
+      throw new Error(errData.error || `HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.text || "I'm sorry, I am having trouble connecting.";
   } catch (error) {
-    console.error("Gemini Error:", error);
+    console.error("Gemini service client error:", error);
     return "I apologize, our AI service is currently unavailable. Please try again later or contact us directly.";
   }
 }
